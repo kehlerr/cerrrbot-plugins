@@ -2,15 +2,15 @@ import logging
 import os
 import posixpath
 import sys
+import time
 from typing import Optional
 
+import argparse
 import yadisk
-from settings import DATA_DIRECTORY_ROOT as APP_DIRECTORY_PATH
-
-from .settings import APP_ID, APP_SECRET, APP_TOKEN
 
 logger = logging.getLogger(__name__)
 
+from .settings import APP_ID, APP_SECRET, APP_TOKEN, APP_DIRECTORY_PATH, UPLOAD_DIRECTORY_PATH, CHECK_DELAY_DEFAULT, CHECK_DELAY_STUCK
 
 class App:
     def __init__(self):
@@ -95,4 +95,36 @@ class App:
             os.rmdir(src_path)
 
 
-app = App()
+def main():
+    app = App()
+    if not app.check_token():
+        if not APP_TOKEN:
+            logger.error("Need specify token!")
+        else:
+            logger.error("Token is invalid")
+        sys.exit(1)
+
+    logger.info("Starting syncing...")
+
+    while True:
+        app.sync_files()
+        pause = CHECK_DELAY_DEFAULT if not app.has_stuck() else CHECK_DELAY_STUCK
+        time.sleep(pause)
+
+
+def get_token():
+    app = App()
+    token = app.get_token()
+    os.environ["YADBOT_TOKEN"] = token
+    print(f"Token is: {token}")
+
+
+if __name__ == "__main__":
+    argparser = argparse.ArgumentParser(description="Yandex Disk and cerrrbot syncer")
+    argparser.add_argument('-t', '--token-only', help="Run for getting token only", action="store_true")
+
+    params = argparser.parse_args()
+    if params.token_only:
+        get_token()
+    else:
+        main()
