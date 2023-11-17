@@ -1,5 +1,6 @@
 # trilium
 trilium-py==0.7.1
+python-magic==0.4.27
 
 # telegraph
 httpx==0.25.0
