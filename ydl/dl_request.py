@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from exceptions import CommandArgsValidationError, EmptyCommandArgsError
 
 from .api import dl_exec
-from .models import YDLCommandArgs
+from .models import YDLCommandArgs, YDLRequestResult
 from .settings import YDLS_DEFAULT_TIMEOUT, YDL_DEFAULT_DIRECTORY_DST
 
 
@@ -84,3 +84,17 @@ class YDLVRequestHandler(YDLRequestHandler):
                 break
 
         return dir_path
+
+
+def get_reply_text_from_result(dl_result: YDLRequestResult) -> str:
+    reply_text = "Download finished"
+    if dl_result:
+        reply_text += " successfully"
+    else:
+        reply_text += " with errors:\n".format()
+
+    elapsed = dl_result.elapsed
+    if elapsed:
+        reply_text += f"; elapsed {elapsed:.2f} seconds"
+
+    return reply_text

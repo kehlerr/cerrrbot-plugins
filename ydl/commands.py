@@ -18,7 +18,7 @@ from exceptions import CommandArgsValidationError, EmptyCommandArgsError
 
 from .api import dl_stop
 from .models import CommandActions, CommandStates, YDLCommandArgs, YDLSMessageData
-from .dl_request import YDLSRequestHandler, YDLVRequestHandler
+from .dl_request import YDLSRequestHandler, YDLVRequestHandler, get_reply_text_from_result
 
 
 router = Router()
@@ -95,15 +95,6 @@ async def cmd_on_before_exec(message: Message, request_id: str, dl_args: YDLComm
 
 
 async def cmd_on_after_exec(message: Message, dl_result: AppResult, replied_message: Message) -> None:
-    reply_text = "Download finished"
-    if dl_result:
-        reply_text += " successfully"
-    else:
-        reply_text += " with errors:\n".format()
-
-    elapsed = dl_result.elapsed
-    if elapsed:
-        reply_text += f"; elapsed {elapsed:.2f} seconds"
-
+    reply_text = get_reply_text_from_result(dl_result)
     await message.reply(reply_text)
     await replied_message.delete()

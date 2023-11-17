@@ -1,25 +1,28 @@
-import asyncio
-
-from celery import Task
 from common import AppResult
+from functools import partial
 
-from .dl_request import YDLSRequestHandler, YDLVRequestHandler
+from plugins.base import AsyncTask
+
+from models.message_document import MessageDocument
+from services.notifications import Notification, push_message_notification
+
+from .dl_request import YDLRequestHandler, YDLSRequestHandler, YDLVRequestHandler, get_reply_text_from_result
 
 
-class YDLTask(Task):
-    HANDLER_CLS: YDLSRequestHandler | YDLVRequestHandler
+class YDLTask(AsyncTask):
+    HANDLER_CLS: type[YDLRequestHandler]
 
-    def run(self, link, *args, **kwargs) -> AppResult:
-        handler = self.HANDLER_CLS(link)
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:  # 'RuntimeError: There is no current event loop...'
-            loop = None
+    async def arun(self, link, *args, msgdoc_id: str, **kwargs) -> None:
+        on_after_exec = partial(self.on_after_exec, msgdoc_id)
+        await self.HANDLER_CLS(link).execute(after_exec=on_after_exec)
 
-        if loop and loop.is_running():
-            loop.create_task(handler.execute())
-        else:
-            asyncio.run(handler.execute())
+    async def on_after_exec(self, msgdoc_id: str, dl_result: AppResult, *args) -> None:
+        await push_message_notification(
+            Notification(
+                text=get_reply_text_from_result(dl_result),
+                reply_to_message_id=MessageDocument(msgdoc_id).message_id
+            )
+        )
 
 
 class YDLVTask(YDLTask):
