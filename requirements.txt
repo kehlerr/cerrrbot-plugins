@@ -1,0 +1,5 @@
+# trilium
+trilium-py==0.7.1
+
+# telegraph
+httpx==0.25.0
