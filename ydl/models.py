@@ -1,5 +1,5 @@
 import asyncio
-from typing import Optional, Union
+from typing import Optional
 
 from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.state import State, StatesGroup
@@ -25,7 +25,7 @@ class YDLCommandArgs(BaseModel):
 
     url: HttpUrl
     directory_dst: str
-    timeout: Optional[int|float] = -1.0
+    timeout: Optional[int | float] = -1.0
 
 
 class YDLRequestResult(BaseModel):

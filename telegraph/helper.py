@@ -15,12 +15,11 @@ SEARCH_REGEX = r'(img|video)\ssrc="(?P<file_url>[^"]+)"'
 
 
 class TelegraphDownloader:
-
     SCHEME = "https"
 
     def __init__(self, url: str) -> None:
         self.status = AppResult()
-        #self._url = URL(url, scheme=self.SCHEME)
+        # self._url = URL(url, scheme=self.SCHEME)
         self._url = URL(url)
         self._directory_path = None
         self._page_content = None
@@ -47,8 +46,7 @@ class TelegraphDownloader:
     def _parse_page_media(self):
         re_pattern = re.compile(SEARCH_REGEX)
         self._media_data = [
-            match.group('file_url')
-            for match in re_pattern.finditer(self._page_content)
+            match.group("file_url") for match in re_pattern.finditer(self._page_content)
         ]
 
     def _prepare_download_media(self) -> None:
@@ -69,7 +67,7 @@ class TelegraphDownloader:
         self._media_data = media_data
 
     def _setup_directory(self) -> None:
-        dir_name = self._url.path.split('/')[-1]
+        dir_name = self._url.path.split("/")[-1]
         create_result = create_directory(dir_name)
         if not create_result:
             self.status = create_result

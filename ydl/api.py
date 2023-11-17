@@ -18,6 +18,7 @@ async def dl_exec(request_id: str, request_args: YDLCommandArgs) -> AppResult:
 
 
 async def dl_stop(request_id: str) -> None:
+    logger.info(f"[YDL][{request_id}] Stopping request manually")
     await dl_request_manager.finish_request(request_id)
 
 

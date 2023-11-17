@@ -70,30 +70,46 @@ async def _run_cmd(cmd_name: str, cmd_args: str, message: Message, state: FSMCon
 async def _on_empty_cmd_args(message: Message, state: FSMContext, cmd_name: str) -> None:
     await state.set_state(CommandStates.waiting_url)
     await state.update_data(cmd_name=cmd_name)
-    await message.reply("Specify URL to downlload:", reply_markup=ReplyKeyboardMarkup(
-            keyboard=[[KeyboardButton(text="Cancel"),]],
+    await message.reply(
+        "Specify URL to downlload:",
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[
+                [
+                    KeyboardButton(text="Cancel"),
+                ]
+            ],
             resize_keyboard=True,
-        )
+        ),
     )
 
 
-async def cmd_on_before_exec(message: Message, request_id: str, dl_args: YDLCommandArgs) -> Message:
+async def cmd_on_before_exec(
+    message: Message, request_id: str, dl_args: YDLCommandArgs
+) -> Message:
     if dl_args.timeout > 0:
         reply_text = f"Download started for {dl_args.timeout} seconds"
     else:
         reply_text = "Download started"
     replied_message = await message.reply(
         reply_text,
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(
-                text="Stop",
-                callback_data=YDLSMessageData(action=CommandActions.STOP, id=request_id).pack(),
-            )
-        ]])
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="Stop",
+                        callback_data=YDLSMessageData(
+                            action=CommandActions.STOP, id=request_id
+                        ).pack(),
+                    )
+                ]
+            ]
+        ),
     )
     return replied_message
 
 
-async def cmd_on_after_exec(message: Message, result: AppResult, replied_message: Message) -> None:
+async def cmd_on_after_exec(
+    message: Message, result: AppResult, replied_message: Message
+) -> None:
     await message.reply(get_reply_text_from_result(result))
     await replied_message.delete()

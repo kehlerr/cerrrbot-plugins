@@ -13,14 +13,17 @@ from .settings import YDLS_DEFAULT_TIMEOUT, YDL_DEFAULT_DIRECTORY_DST
 
 
 class YDLRequestHandler:
-
     DEFAULT_TIMEOUT: float
 
     def __init__(self, *args) -> None:
         self._dl_args = self._parse_dl_cmd_args(*args)
         self.request_id: str = uuid4().hex
 
-    async def execute(self, before_exec: Optional[callable] = None, after_exec: Optional[callable] = None) -> None:
+    async def execute(
+        self,
+        before_exec: Optional[callable] = None,
+        after_exec: Optional[callable] = None,
+    ) -> None:
         if before_exec is not None:
             before_exec_result = await before_exec(self.request_id, self._dl_args)
         else:
@@ -31,15 +34,19 @@ class YDLRequestHandler:
         if after_exec is not None:
             await after_exec(dl_result, before_exec_result)
 
-    def _parse_dl_cmd_args(self, url: str, timeout: Optional[int | float] = None) -> YDLCommandArgs:
+    def _parse_dl_cmd_args(
+        self, url: str, timeout: Optional[int | float] = None
+    ) -> YDLCommandArgs:
         if not url:
             raise EmptyCommandArgsError("Need specify url to download")
-        
+
         if timeout is not None:
             try:
                 timeout = get_seconds_from_time(timeout)
                 if timeout <= 0:
-                    raise CommandArgsValidationError(f"Timeout must be greater 0: {timeout}")
+                    raise CommandArgsValidationError(
+                        f"Timeout must be greater 0: {timeout}"
+                    )
             except ValueError:
                 raise CommandArgsValidationError(f"Invalid timeout value: {timeout}")
         else:
@@ -60,7 +67,7 @@ class YDLSRequestHandler(YDLRequestHandler):
 
     def _prepare_directory_dst(cls, url: str) -> str | None:
         _url = URL(url)
-        host_part: str = _url.host.split('.')[-2]
+        host_part: str = _url.host.split(".")[-2]
         path_part: str = _url.path.rstrip(os.path.sep).split(os.path.sep)[-1]
         if host_part and path_part:
             dir_name: str = f"[{host_part}] {path_part}"
@@ -69,11 +76,11 @@ class YDLSRequestHandler(YDLRequestHandler):
 
 class YDLVRequestHandler(YDLRequestHandler):
     DEFAULT_TIMEOUT: float = -1.0
-    SUBDIR_KEYS: tuple[str, ...] = ("plname", )
+    SUBDIR_KEYS: tuple[str, ...] = ("plname",)
 
     def _prepare_directory_dst(self, url: str) -> str:
         _url = URL(url)
-        host_part: str = _url.host.split('.')[-2]
+        host_part: str = _url.host.split(".")[-2]
         dir_path: str = YDL_DEFAULT_DIRECTORY_DST
         if host_part:
             dir_path = os.path.join(dir_path, f"[{host_part}]")
@@ -81,7 +88,7 @@ class YDLVRequestHandler(YDLRequestHandler):
         for key in self.SUBDIR_KEYS:
             param_value = _url.params.get(key)
             if param_value:
-                dir_path=os.path.join(dir_path, param_value)
+                dir_path = os.path.join(dir_path, param_value)
                 break
 
         return dir_path
