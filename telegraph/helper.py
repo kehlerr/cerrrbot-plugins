@@ -1,10 +1,12 @@
+import asyncio
 import logging
 import os
 import re
 
-import requests
+import aiofiles
+import httpx
 from common import AppResult, create_directory
-from httpx import URL
+from httpx import Response, URL, HTTPError
 
 logger = logging.getLogger("cerrrbot")
 
@@ -16,7 +18,7 @@ class TelegraphDownloader:
 
     SCHEME = "https"
 
-    def __init__(self, url: str):
+    def __init__(self, url: str) -> None:
         self.status = AppResult()
         #self._url = URL(url, scheme=self.SCHEME)
         self._url = URL(url)
@@ -24,16 +26,21 @@ class TelegraphDownloader:
         self._page_content = None
         self._media_data = None
 
-    def download(self) -> AppResult:
+    async def download(self) -> None:
         self._fetch_page_content()
         self._parse_page_media()
         self._prepare_download_media()
-        self._download_media()
+        await self._download_media()
+
+    def get_result_info(self) -> str:
+        if self.status:
+            return "[TGDL] finished succesfully"
+        return "[TGDL] failed:\n{}".format(self.status.info)
 
     def _fetch_page_content(self) -> None:
         try:
-            self._page_content = requests.get(self._url).text
-        except requests.exceptions.RequestException as exc:
+            self._page_content = httpx.get(self._url).text
+        except HTTPError as exc:
             self._page_content = ""
             logger.error(f"Request error occured: {exc}")
 
@@ -70,21 +77,26 @@ class TelegraphDownloader:
 
         self._directory_path = create_result.data["path"]
 
-    def _download_media(self) -> None:
+    async def _download_media(self) -> None:
         if not self.status:
             return
 
-        result = AppResult()
-        for media in self._media_data:
-            result_ = self._download_file(*media)
-            result.merge(result_)
+        tasks = []
+        async with asyncio.TaskGroup() as task_group:
+            for media in self._media_data:
+                task = task_group.create_task(self._download_file(*media))
+                tasks.append(task)
 
+        result = AppResult()
+        result.merge(*[t.result() for t in tasks])
         self.status = result
 
-    def _download_file(self, url: str, file_name: str) -> AppResult:
+    async def _download_file(self, url: str, file_name: str) -> AppResult:
         file_path = os.path.join(self._directory_path, file_name)
-        with open(file_path, "wb") as fd:
-            response = requests.get(url)
-            fd.write(response.content)
+        async with httpx.AsyncClient() as client:
+            response: Response = await client.get(url)
+
+        async with aiofiles.open(file_path, "wb") as fd:
+            await fd.write(response.content)
 
         return AppResult()

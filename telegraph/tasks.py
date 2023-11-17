@@ -1,24 +1,18 @@
-import asyncio
-
-from celery import Task
-from common import AppResult
 from models.message_document import MessageDocument
 from services.notifications import Notification, push_message_notification
 
+from plugins.base import AsyncTask
 from .helper import TelegraphDownloader
 
 
-class TelegraphScrapeTask(Task):
-    async def arun(self, links, *args, msgdoc_id: str, **kwargs) -> None:
-        result = AppResult()
-        for link in links:
-            downloader = TelegraphDownloader(link)
-            downloader.download()
-            result.merge(downloader.status)
+class TelegraphScrapeTask(AsyncTask):
+    async def arun(self, link: str, *args, msgdoc_id: str, **kwargs) -> None:
+        downloader = TelegraphDownloader(link)
+        await downloader.download()
 
         await push_message_notification(
              Notification(
-                text=result and "TG DL finished succesfully" or "TG DL failed",
+                text=downloader.get_result_info(),
                 reply_to_message_id=MessageDocument(msgdoc_id).message_id
             )
         )
