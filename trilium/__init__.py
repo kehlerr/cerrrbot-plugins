@@ -11,7 +11,7 @@ actions = (
     CustomMessageAction(code="CST_BOOK", caption="Bookmark", order=502, method_args={
         "task_name": "plugins.trilium.tasks.TriliumBookmark",
         "is_instant": True,
-        "parse_text_links": True
+        "parse_links": True
     }),
 )
 
