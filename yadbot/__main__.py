@@ -1,9 +1,8 @@
+import argparse
 import logging
 import os
 import sys
 import time
-
-import argparse
 
 from .helper import app
 from .settings import CHECK_DELAY_DEFAULT, CHECK_DELAY_STUCK
@@ -28,7 +27,7 @@ def run():
 def set_token_to_env():
     token = app.get_token()
     os.environ["YADBOT_TOKEN"] = token
-    print(f"Token set in env var `YADBOT_TOKEN`")
+    print("Token set in env var `YADBOT_TOKEN`")
 
 
 argparser = argparse.ArgumentParser(description="Yandex Disk and cerrrbot syncer")

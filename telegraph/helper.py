@@ -3,10 +3,8 @@ import os
 import re
 
 import requests
-from httpx import URL
-
 from common import AppResult, create_directory
-
+from httpx import URL
 
 logger = logging.getLogger("cerrrbot")
 

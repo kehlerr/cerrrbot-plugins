@@ -1,6 +1,5 @@
 
 from decouple import config
-
 from settings import SCHEME
 
 TRILIUM_HOST = config("TRILIUM_HOST", default="localhost")

@@ -2,7 +2,6 @@ from models import CustomMessageAction
 
 from .tasks import TriliumBookmark, TriliumNote
 
-
 actions = (
     CustomMessageAction(code="CST_NOTE", caption="Note", order=501, method_args={
         "task_name": "plugins.trilium.tasks.TriliumNote",
