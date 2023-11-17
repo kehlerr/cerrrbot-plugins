@@ -1,4 +1,4 @@
-from message_action import CustomMessageAction
+from models import CustomMessageAction
 
 from .tasks import TelegraphScrapeTask
 
