@@ -11,6 +11,8 @@ from common import AppResult, create_directory
 logger = logging.getLogger("cerrrbot")
 
 
+SEARCH_REGEX = r'(img|video)\ssrc="(?P<file_url>[^"]+)"'
+
 
 class TelegraphDownloader:
 
@@ -38,8 +40,11 @@ class TelegraphDownloader:
             logger.error(f"Request error occured: {exc}")
 
     def _parse_page_media(self):
-        re_pattern = re.compile(r'<img src="(?P<file_url>.+?)">')
-        self._media_data = re_pattern.findall(self._page_content)
+        re_pattern = re.compile(SEARCH_REGEX)
+        self._media_data = [
+            match.group('file_url')
+            for match in re_pattern.finditer(self._page_content)
+        ]
 
     def _prepare_download_media(self) -> None:
         if not self._media_data:
