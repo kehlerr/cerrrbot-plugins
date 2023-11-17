@@ -16,9 +16,9 @@ from aiogram.types import (
 from common import AppResult
 from exceptions import CommandArgsValidationError, EmptyCommandArgsError
 
-from .api import dl_stop
+from .api import dl_stop, get_reply_text_from_result
 from .models import CommandActions, CommandStates, YDLCommandArgs, YDLSMessageData
-from .dl_request import YDLSRequestHandler, YDLVRequestHandler, get_reply_text_from_result
+from .dl_request import YDLSRequestHandler, YDLVRequestHandler
 
 
 router = Router()
@@ -94,7 +94,6 @@ async def cmd_on_before_exec(message: Message, request_id: str, dl_args: YDLComm
     return replied_message
 
 
-async def cmd_on_after_exec(message: Message, dl_result: AppResult, replied_message: Message) -> None:
-    reply_text = get_reply_text_from_result(dl_result)
-    await message.reply(reply_text)
+async def cmd_on_after_exec(message: Message, result: AppResult, replied_message: Message) -> None:
+    await message.reply(get_reply_text_from_result(result))
     await replied_message.delete()

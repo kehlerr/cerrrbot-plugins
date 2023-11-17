@@ -66,9 +66,9 @@ class DLRequestManager:
 
     def _process_proc_result(self,
         request: YDLRequestData,
-        stdout: bytes | None,
-        stderr: bytes | None,
         errorcode: int | None,
+        stdout: bytes | None,
+        stderr: bytes | None
     ) -> None:
         if errorcode is not None:
             request.result.errorcode = errorcode
@@ -85,7 +85,7 @@ class DLRequestManager:
         if request.started_at > 0 and request.finished_at > 0:
             request.result.elapsed = request.finished_at - request.started_at
 
-    async def _terminate_proc(self, proc: asyncio.subprocess.Process) -> tuple[int | None, str | None, str | None]:
+    async def _terminate_proc(self, proc: asyncio.subprocess.Process) -> tuple[int | None, bytes | None, bytes | None]:
         errorcode, stdout, stderr = None, None, None
         if proc:
             errorcode = proc.returncode

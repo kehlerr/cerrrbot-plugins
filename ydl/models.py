@@ -1,5 +1,5 @@
 import asyncio
-from typing import Optional
+from typing import Optional, Union
 
 from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.state import State, StatesGroup
@@ -37,6 +37,13 @@ class YDLRequestResult(BaseModel):
     @property
     def is_success(self) -> bool:
         return not bool(self.errorcode)
+
+    def dict(self, *args, **kwargs) -> dict[str, str]:
+        data = super().dict(*args, **kwargs)
+        for key, value in data.items():
+            if isinstance(value, bytes):
+                data[key] = value.decode()
+        return data
 
 
 class YDLRequestData(BaseModel):

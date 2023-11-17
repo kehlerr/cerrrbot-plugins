@@ -4,10 +4,11 @@ from uuid import uuid4
 from typing import Optional
 from pydantic import ValidationError
 
+from common import get_seconds_from_time
 from exceptions import CommandArgsValidationError, EmptyCommandArgsError
 
 from .api import dl_exec
-from .models import YDLCommandArgs, YDLRequestResult
+from .models import YDLCommandArgs
 from .settings import YDLS_DEFAULT_TIMEOUT, YDL_DEFAULT_DIRECTORY_DST
 
 
@@ -36,7 +37,7 @@ class YDLRequestHandler:
         
         if timeout is not None:
             try:
-                timeout = float(timeout)
+                timeout = get_seconds_from_time(timeout)
                 if timeout <= 0:
                     raise CommandArgsValidationError(f"Timeout must be greater 0: {timeout}")
             except ValueError:
@@ -84,17 +85,3 @@ class YDLVRequestHandler(YDLRequestHandler):
                 break
 
         return dir_path
-
-
-def get_reply_text_from_result(dl_result: YDLRequestResult) -> str:
-    reply_text = "Download finished"
-    if dl_result:
-        reply_text += " successfully"
-    else:
-        reply_text += " with errors:\n".format()
-
-    elapsed = dl_result.elapsed
-    if elapsed:
-        reply_text += f"; elapsed {elapsed:.2f} seconds"
-
-    return reply_text
