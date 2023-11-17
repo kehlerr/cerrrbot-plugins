@@ -5,7 +5,9 @@ from datetime import datetime
 
 import psutil
 
+from .repository import YDLArgsRepository
 from .models import YDLCommandArgs, YDLRequestData, YDLRequestResult
+from .settings import DUPLICATED_REQUEST_ERROR_CODE
 
 logger = logging.getLogger("cerrrbot")
 
@@ -16,26 +18,25 @@ class DLRequestManager:
         'timeout --signal SIGINT {cmd_timeout} yt-dlp "{url}" -P "{output_dir}"'
     )
 
-    def __init__(self):
+    def __init__(self, repo: YDLArgsRepository):
+        self._repo = repo
         self._requests: dict[str, YDLRequestData] = {}
 
-    async def add_request(
-        self, request_id: str, request_args: YDLCommandArgs
-    ) -> YDLRequestResult:
+    async def add_request(self, request_id: str, request_args: YDLCommandArgs) -> YDLRequestResult:
         url = request_args.url
-        if self._requests:
-            if request_id in self._requests or url in list((
-                v.url for v in self._requests.values()
-            )):
-                return YDLRequestResult(
-                    errorcode=-1, stderr=f"Duplicated request for url: {url}"
-                )
+        is_request_duplicated = await self._repo.is_exists(request_id, request_args)
+        if is_request_duplicated:
+            return YDLRequestResult(
+                errorcode=DUPLICATED_REQUEST_ERROR_CODE,
+                stderr=f"Duplicated request for url: {url}"
+            )
+        await self._repo.insert(request_id, request_args)
 
         request = YDLRequestData(
             id=request_id,
             url=url,
             timeout=request_args.timeout,
-            result=YDLRequestResult(),
+            result=YDLRequestResult()
         )
         self._requests[request_id] = request
         cmd: str = self.CMD_PATTERN.format(
@@ -71,7 +72,8 @@ class DLRequestManager:
     async def finish_request(
         self, request_id: str
     ) -> tuple[str | None, str | None] | None:
-        request = self._requests.pop(request_id, None)
+        await self._repo.pop(request_id)
+        request: YDLRequestData | None = self._requests.pop(request_id, None)
         if request is None:
             # this case could be when request was finished manually
             logger.warning(f"[YDL][{request_id}] Request not found")
@@ -127,6 +129,3 @@ class DLRequestManager:
             except RuntimeError:
                 pass
         return errorcode, stdout, stderr
-
-
-dl_request_manager = DLRequestManager()
