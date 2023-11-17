@@ -1,7 +1,7 @@
 from models.message_document import MessageDocument
+from plugins.base import AsyncTask
 from services.notifications import Notification, push_message_notification
 
-from plugins.base import AsyncTask
 from .helper import TelegraphDownloader
 
 

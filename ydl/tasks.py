@@ -1,12 +1,11 @@
-from common import AppResult
 from functools import partial
 
-from plugins.base import AsyncTask
-
+from common import AppResult
 from models.message_document import MessageDocument
+from plugins.base import AsyncTask
 from services.notifications import Notification, push_message_notification
 
-from .api import get_reply_text_from_result, dl_stop
+from .api import dl_stop, get_reply_text_from_result
 from .dl_request import YDLRequestHandler, YDLSRequestHandler, YDLVRequestHandler
 
 

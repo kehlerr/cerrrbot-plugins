@@ -10,7 +10,6 @@ from .settings import CHECK_DELAY_DEFAULT, CHECK_DELAY_STUCK
 logger = logging.getLogger(__name__)
 
 
-
 def run():
     if not app.check_token():
         logger.error("Token is invalid")
@@ -31,7 +30,9 @@ def set_token_to_env():
 
 
 argparser = argparse.ArgumentParser(description="Yandex Disk and cerrrbot syncer")
-argparser.add_argument('-t', '--token-setup', help="Run for getting token only", action="store_true")
+argparser.add_argument(
+    "-t", "--token-setup", help="Run for getting token only", action="store_true"
+)
 params = argparser.parse_args()
 if params.token_setup:
     set_token_to_env()

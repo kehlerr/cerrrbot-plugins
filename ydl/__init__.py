@@ -1,9 +1,8 @@
 from models import CustomMessageAction
 
 from .commands import router as commands_router
-from .tasks import YDLSTask, YDLVTask
 from .settings import YDLS_HOSTS, YDLV_HOSTS
-
+from .tasks import YDLSTask, YDLVTask
 
 actions = (
     CustomMessageAction(

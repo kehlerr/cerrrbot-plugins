@@ -1,8 +1,7 @@
 import os
+
 from decouple import config
-
 from settings import DATA_DIRECTORY_ROOT
-
 
 cast_to_list = lambda v: [s.strip() for s in v.split(",") if s]
 

@@ -6,7 +6,7 @@ import re
 import aiofiles
 import httpx
 from common import AppResult, create_directory
-from httpx import Response, URL, HTTPError
+from httpx import URL, HTTPError, Response
 
 logger = logging.getLogger("cerrrbot")
 

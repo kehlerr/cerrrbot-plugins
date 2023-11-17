@@ -45,10 +45,12 @@ class DLRequestManager:
         return request.result
 
     async def run_proc(self, request: YDLRequestData, cmd: str) -> None:
-        request.proc: asyncio.subprocess.Process = await asyncio.create_subprocess_shell(
-            cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
+        request.proc: asyncio.subprocess.Process = (
+            await asyncio.create_subprocess_shell(
+                cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
         )
         request.started_at = datetime.now().timestamp()
         logger.info(

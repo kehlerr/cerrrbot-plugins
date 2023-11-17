@@ -41,7 +41,6 @@ def add_note(message_text: str, forward_from_id: str, forward_from_title: str) -
 
     parent_note_id = TRILIUM_NOTE_ID_BOOK_NOTES_ALL
     if forward_from_id:
-
         if "-" in forward_from_id:
             forward_from_id = forward_from_id.replace("-", "")
         parent_note_id = create_or_get_parent_note(

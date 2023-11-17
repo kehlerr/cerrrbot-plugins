@@ -1,15 +1,15 @@
 import os
-from httpx import URL
-from uuid import uuid4
 from typing import Optional
-from pydantic import ValidationError
+from uuid import uuid4
 
 from common import get_seconds_from_time
 from exceptions import CommandArgsValidationError, EmptyCommandArgsError
+from httpx import URL
+from pydantic import ValidationError
 
 from .api import dl_exec
 from .models import YDLCommandArgs
-from .settings import YDLS_DEFAULT_TIMEOUT, YDL_DEFAULT_DIRECTORY_DST
+from .settings import YDL_DEFAULT_DIRECTORY_DST, YDLS_DEFAULT_TIMEOUT
 
 
 class YDLRequestHandler:

@@ -7,9 +7,9 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     CallbackQuery,
     InlineKeyboardButton,
+    InlineKeyboardMarkup,
     KeyboardButton,
     Message,
-    InlineKeyboardMarkup,
     ReplyKeyboardMarkup,
     ReplyKeyboardRemove,
 )
@@ -17,23 +17,26 @@ from common import AppResult
 from exceptions import CommandArgsValidationError, EmptyCommandArgsError
 
 from .api import dl_stop, get_reply_text_from_result
-from .models import CommandActions, CommandStates, YDLCommandArgs, YDLSMessageData
 from .dl_request import YDLSRequestHandler, YDLVRequestHandler
-
+from .models import CommandActions, CommandStates, YDLCommandArgs, YDLSMessageData
 
 router = Router()
 
 
 @router.message(CommandStates.waiting_url, F.text.casefold() == "cancel")
 async def on_cancel_start(message: Message, bot: Bot, state: FSMContext) -> None:
-    replied_message = await message.answer("canceled", reply_markup=ReplyKeyboardRemove())
+    replied_message = await message.answer(
+        "canceled", reply_markup=ReplyKeyboardRemove()
+    )
     await replied_message.delete()
     await message.delete()
     await state.clear()
 
 
 @router.callback_query(YDLSMessageData.filter(F.action == CommandActions.STOP))
-async def on_action_pressed(query: CallbackQuery, callback_data: YDLSMessageData) -> None:
+async def on_action_pressed(
+    query: CallbackQuery, callback_data: YDLSMessageData
+) -> None:
     await dl_stop(callback_data.id)
 
 
@@ -67,7 +70,9 @@ async def _run_cmd(cmd_name: str, cmd_args: str, message: Message, state: FSMCon
     await handler.execute(before_exec=before_exec, after_exec=after_exec)
 
 
-async def _on_empty_cmd_args(message: Message, state: FSMContext, cmd_name: str) -> None:
+async def _on_empty_cmd_args(
+    message: Message, state: FSMContext, cmd_name: str
+) -> None:
     await state.set_state(CommandStates.waiting_url)
     await state.update_data(cmd_name=cmd_name)
     await message.reply(

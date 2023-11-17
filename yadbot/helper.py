@@ -1,3 +1,4 @@
+import argparse
 import logging
 import os
 import posixpath
@@ -5,12 +6,20 @@ import sys
 import time
 from typing import Optional
 
-import argparse
 import yadisk
 
 logger = logging.getLogger(__name__)
 
-from .settings import APP_ID, APP_SECRET, APP_TOKEN, APP_DIRECTORY_PATH, UPLOAD_DIRECTORY_PATH, CHECK_DELAY_DEFAULT, CHECK_DELAY_STUCK
+from .settings import (
+    APP_DIRECTORY_PATH,
+    APP_ID,
+    APP_SECRET,
+    APP_TOKEN,
+    CHECK_DELAY_DEFAULT,
+    CHECK_DELAY_STUCK,
+    UPLOAD_DIRECTORY_PATH,
+)
+
 
 class App:
     def __init__(self):
@@ -43,7 +52,9 @@ class App:
     def sync_files(self) -> None:
         self._upload_directory()
 
-    def _upload_directory(self, src_path: Optional[os.PathLike] = APP_DIRECTORY_PATH) -> None:
+    def _upload_directory(
+        self, src_path: Optional[os.PathLike] = APP_DIRECTORY_PATH
+    ) -> None:
         dst_path = UPLOAD_DIRECTORY_PATH
         dir_name = src_path.split(APP_DIRECTORY_PATH)[-1].split(os.path.sep)[-1]
         if dir_name:
@@ -121,7 +132,9 @@ def get_token():
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(description="Yandex Disk and cerrrbot syncer")
-    argparser.add_argument('-t', '--token-only', help="Run for getting token only", action="store_true")
+    argparser.add_argument(
+        "-t", "--token-only", help="Run for getting token only", action="store_true"
+    )
 
     params = argparser.parse_args()
     if params.token_only:
