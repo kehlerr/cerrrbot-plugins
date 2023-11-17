@@ -13,9 +13,9 @@ class YDLTask(AsyncTask):
     HANDLER_CLS: type[YDLRequestHandler]
     request_id: str
 
-    async def arun_impl(self, link, *args, msgdoc_id: str, **kwargs) -> None:
+    async def arun_impl(self, links: list[str], *args, msgdoc_id: str, **kwargs) -> None:
         on_after_exec = partial(self.on_after_exec, msgdoc_id)
-        handler = self.HANDLER_CLS(link)
+        handler = self.HANDLER_CLS(links[0])
         self.request_id = handler.request_id
         await handler.execute(after_exec=on_after_exec)
 

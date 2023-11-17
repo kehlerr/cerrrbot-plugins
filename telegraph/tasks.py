@@ -6,9 +6,10 @@ from .helper import TelegraphDownloader
 
 
 class TelegraphScrapeTask(AsyncTask):
-    async def arun_impl(self, link: str, *args, msgdoc_id: str, **kwargs) -> None:
-        downloader = TelegraphDownloader(link)
-        await downloader.download()
+    async def arun_impl(self, links: list[str], *args, msgdoc_id: str, **kwargs) -> None:
+        for link in links:
+            downloader = TelegraphDownloader(link)
+            await downloader.download()
 
         await push_message_notification(
             Notification(

@@ -24,9 +24,9 @@ class DLRequestManager:
     ) -> YDLRequestResult:
         url = request_args.url
         if self._requests:
-            if request_id in self._requests or url in (
+            if request_id in self._requests or url in list((
                 v.url for v in self._requests.values()
-            ):
+            )):
                 return YDLRequestResult(
                     errorcode=-1, stderr=f"Duplicated request for url: {url}"
                 )

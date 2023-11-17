@@ -16,6 +16,5 @@ class TriliumNote(Task):
 
 
 class TriliumBookmark(Task):
-    def run(self, links, *args, msgdoc_id: str, **kwargs) -> AppResult:
-        msgdoc = MessageDocument(msgdoc_id)
-        return AppResult(add_bookmark_urls(msgdoc.message_text, links))
+    def run(self, links, *args, **kwargs) -> AppResult:
+        return AppResult(add_bookmark_urls(links))

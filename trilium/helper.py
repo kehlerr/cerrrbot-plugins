@@ -1,5 +1,4 @@
 import re
-from typing import List
 
 import requests
 from trilium_py.client import ETAPI
@@ -19,9 +18,8 @@ urlregex = (
 )
 
 
-def add_bookmark_urls(message_text: str, text_links: List[str]) -> bool:
-    links = re.findall(urlregex, message_text)
-    urls = set(text_links + links)
+def add_bookmark_urls(text_links: list[str]) -> bool:
+    urls = set(text_links)
     existing_content = trilium_client.get_note_content(TRILIUM_NOTE_ID_BOOKMARKS_URL)
     adding_content = _horizontal_line() + _paragraph(
         "<br>".join(_link(url) for url in urls)
@@ -117,7 +115,7 @@ def init_notes():
         parentNoteId=TRILIUM_NOTE_ID_BOOK_ROOT,
         title="[TG] All notes",
         type="text",
-        content="<hr>",
+        content="",
         noteId=TRILIUM_NOTE_ID_BOOK_NOTES_ALL,
     )
 
