@@ -1,29 +1,25 @@
-import argparse
+import asyncio
 import logging
 import os
 import posixpath
 import sys
-import time
-from typing import Optional
 
 import yadisk
 
 logger = logging.getLogger(__name__)
 
-from .settings import (
+from settings import (
     APP_DIRECTORY_PATH,
     APP_ID,
     APP_SECRET,
     APP_TOKEN,
-    CHECK_DELAY_DEFAULT,
-    CHECK_DELAY_STUCK,
     UPLOAD_DIRECTORY_PATH,
 )
 
 
 class App:
     def __init__(self):
-        self.y_app = yadisk.YaDisk(APP_ID, APP_SECRET, APP_TOKEN)
+        self.y_app = yadisk.YaDisk(APP_ID, APP_SECRET, APP_TOKEN, default_args={"n_retries": 5, "retry_interval": 60})
         self._stuck_files = set()
 
     def has_stuck(self) -> bool:
@@ -49,95 +45,74 @@ class App:
 
         return self.y_app.token
 
-    def sync_files(self) -> None:
-        self._upload_directory()
+    async def sync_files(self) -> None:
+        await self._upload(APP_DIRECTORY_PATH)
 
-    def _upload_directory(
-        self, src_path: Optional[os.PathLike] = APP_DIRECTORY_PATH
-    ) -> None:
-        dst_path = UPLOAD_DIRECTORY_PATH
-        dir_name = src_path.split(APP_DIRECTORY_PATH)[-1].split(os.path.sep)[-1]
-        if dir_name:
-            dst_path = posixpath.join(dst_path, dir_name)
-            try:
-                self.y_app.mkdir(dst_path)
-            except yadisk.exceptions.PathExistsError:
-                logger.warning(f"Path {dst_path} already exists")
+    async def _upload(self, src_path: os.PathLike) -> None:
+        print(list(os.walk(src_path))[0])
+        _, dirnames, files_list = list(os.walk(src_path))[0]
 
-        self._upload_files(src_path, dst_path)
+        for dirname in dirnames:
+            await self._upload(os.path.join(src_path, dirname))
 
-    def _upload_files(self, src_path: os.PathLike, dst_path: os.PathLike) -> None:
-        files_list = os.listdir(src_path)
-        if not files_list:
-            logger.debug(f"No files to upload here:{src_path}")
-            return
+        dst_path = self._create_upload_directory(src_path)
 
-        logger.info(f"Files to upload:{files_list}")
-
-        for file_name in files_list:
-            file_path = posixpath.join(src_path, file_name)
-            if os.path.isdir(file_path):
-                self._upload_directory(file_path)
-                continue
-
-            file_path_dest = posixpath.join(dst_path, file_name)
-            try:
-                logger.info(f"Uploading {file_path}")
-                self.y_app.upload(file_path, file_path_dest)
-            except yadisk.exceptions.PathExistsError:
-                logger.warning(f"File already exists: {file_path_dest}")
-            except yadisk.exceptions.YaDiskError as exc:
-                logger.error(f"Some error occured: {exc}")
-                self._stuck_files.add(file_path)
-                continue
-
-            try:
-                os.remove(file_path)
-            except Exception as exc:
-                logger.error(f"System error occured while deleting file:{exc}")
-                self._stuck_files.add(file_path)
-
-            try:
-                self._stuck_files.remove(file_path)
-            except KeyError:
-                continue
-
+        if files_list:
+            await self._upload_files(src_path, dst_path, files_list)
         if src_path != APP_DIRECTORY_PATH and not os.listdir(src_path):
             os.rmdir(src_path)
 
+    def _create_upload_directory(self, src_path: os.PathLike) -> str:
+        dst_path = UPLOAD_DIRECTORY_PATH
+        dir_path = src_path.split(APP_DIRECTORY_PATH)[-1]
+        if dir_path:
+            dst_path = posixpath.join(dst_path, dir_path)
+            self._create_upload_tree(dir_path)
+        return dst_path
 
-def main():
-    app = App()
-    if not app.check_token():
-        if not APP_TOKEN:
-            logger.error("Need specify token!")
-        else:
-            logger.error("Token is invalid")
-        sys.exit(1)
+    def _create_upload_tree(self, dir_path: str) -> None:
+        dirnames = dir_path.split(os.path.sep)
+        current_dir_path = UPLOAD_DIRECTORY_PATH
+        for dir_name in dirnames:
+            current_dir_path = posixpath.join(current_dir_path, dir_name)
+            try:
+                self.y_app.mkdir(current_dir_path)
+            except yadisk.exceptions.PathExistsError:
+                logger.warning(f"Path {current_dir_path} already exists")
 
-    logger.info("Starting syncing...")
+    async def _upload_files(self, src_path: os.PathLike, dst_path: os.PathLike, files_list: list[str]) -> None:
+        logger.info(f"Files to upload:{files_list} from directory: {src_path}")
+        async with asyncio.TaskGroup() as task_group:
+            for file_name in files_list:
+                if file_name.endswith(".part"):
+                    continue
 
-    while True:
-        app.sync_files()
-        pause = CHECK_DELAY_DEFAULT if not app.has_stuck() else CHECK_DELAY_STUCK
-        time.sleep(pause)
+                file_path = posixpath.join(src_path, file_name)
+                file_path_dest = posixpath.join(dst_path, file_name)
+                task_group.create_task(self._upload_file(file_path, file_path_dest))
+
+    async def _upload_file(self, file_path: str, file_path_dest: str) -> None:
+        print(f"Uploading file: {file_path} to {file_path_dest}")
+        try:
+            logger.info(f"Uploading {file_path}")
+            self.y_app.upload(file_path, file_path_dest)
+        except yadisk.exceptions.PathExistsError:
+            logger.warning(f"File already exists: {file_path_dest}")
+        except yadisk.exceptions.YaDiskError as exc:
+            logger.error(f"Some error occured: {exc}")
+            self._stuck_files.add(file_path)
+            return
+
+        try:
+            os.remove(file_path)
+        except Exception as exc:
+            logger.error(f"System error occured while deleting file:{exc}")
+            self._stuck_files.add(file_path)
+
+        try:
+            self._stuck_files.remove(file_path)
+        except KeyError:
+            ...
 
 
-def get_token():
-    app = App()
-    token = app.get_token()
-    os.environ["YADBOT_TOKEN"] = token
-    print(f"Token is: {token}")
-
-
-if __name__ == "__main__":
-    argparser = argparse.ArgumentParser(description="Yandex Disk and cerrrbot syncer")
-    argparser.add_argument(
-        "-t", "--token-only", help="Run for getting token only", action="store_true"
-    )
-
-    params = argparser.parse_args()
-    if params.token_only:
-        get_token()
-    else:
-        main()
+app = App()

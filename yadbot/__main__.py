@@ -1,16 +1,17 @@
 import argparse
+import asyncio
 import logging
 import os
 import sys
 import time
 
-from .helper import app
-from .settings import CHECK_DELAY_DEFAULT, CHECK_DELAY_STUCK
+from helper import app
+from settings import CHECK_DELAY_DEFAULT, CHECK_DELAY_STUCK
 
 logger = logging.getLogger(__name__)
 
 
-def run():
+async def main():
     if not app.check_token():
         logger.error("Token is invalid")
         sys.exit(1)
@@ -18,7 +19,7 @@ def run():
     logger.info("Starting syncing...")
 
     while True:
-        app.sync_files()
+        await app.sync_files()
         pause = CHECK_DELAY_DEFAULT if not app.has_stuck() else CHECK_DELAY_STUCK
         time.sleep(pause)
 
@@ -37,4 +38,4 @@ params = argparser.parse_args()
 if params.token_setup:
     set_token_to_env()
 else:
-    run()
+    asyncio.run(main())
