@@ -4,3 +4,7 @@ python-magic==0.4.27
 
 # telegraph
 httpx==0.25.0
+
+# ydlp
+yt-dlp==2023.10.13
+psutil==5.9.6
