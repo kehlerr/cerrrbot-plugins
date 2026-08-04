@@ -1,18 +1,12 @@
-from models import CustomMessageAction
+from app.plugins.base import Plugin
 
 from .tasks import TelegraphScrapeTask
+from .settings import settings
 
-actions = (
-    CustomMessageAction(
-        code="TGHP_DL",
-        caption="Telegraph DL",
-        order=600,
-        method_args={
-            "task_name": "plugins.telegraph.tasks.TelegraphScrapeTask",
-            "parse_links": True,
-            "allowed_hosts": ["telegra.ph"],
-        },
-    ),
+plugin = Plugin(
+    name="telegraph",
+    tasks=(TelegraphScrapeTask,),
+    settings=settings
 )
 
-tasks = (TelegraphScrapeTask,)
+__all__ = ("plugin",)

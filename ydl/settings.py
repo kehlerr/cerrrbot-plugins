@@ -1,16 +1,18 @@
 import os
 
-from decouple import config
-from settings import DATA_DIRECTORY_ROOT
+from pydantic import Field
 
-cast_to_list = lambda v: [s.strip() for s in v.split(",") if s]
+from app.plugins.base import PluginSettings
+from app import app_settings
 
-YDLS_HOSTS = config("CERRRBOT_YDLS_HOSTS", default="", cast=cast_to_list)
-YDLV_HOSTS = config("CERRRBOT_YDLV_HOSTS", default="", cast=cast_to_list)
-del cast_to_list
 
-YDLS_DEFAULT_TIMEOUT = config("CERRRBOT_YDLS_DEFAULT_TIMEOUT", default=1800, cast=float)
+class YdlSettings(PluginSettings):
+    NAME = "YDL"
 
-YDL_DEFAULT_DIRECTORY_DST = os.path.join(DATA_DIRECTORY_ROOT, "YDL")
+    hosts: list[str] = Field(default_factory=list)
+    data_directory: str = Field(default_factory=lambda: os.path.join(app_settings.data_root, "YDL"))
+    default_timeout: int = Field(default=1800)
+    max_timeout: int = Field(default=43200)
 
-DUPLICATED_REQUEST_ERROR_CODE = -10
+
+settings = YdlSettings()  # type: ignore

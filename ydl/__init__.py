@@ -1,36 +1,17 @@
-from models import CustomMessageAction
+from app.plugins.base import Plugin
 
 from .commands import router as commands_router
-from .settings import YDLS_HOSTS, YDLV_HOSTS
+from .settings import settings
 from .tasks import YDLSTask, YDLVTask
 
-actions = (
-    CustomMessageAction(
-        code="YDLS",
-        caption="YDLS",
-        order=601,
-        method_args={
-            "task_name": "plugins.ydl.tasks.YDLSTask",
-            "parse_links": True,
-            "allowed_hosts": YDLS_HOSTS,
-        },
-    ),
-    CustomMessageAction(
-        code="YDLV",
-        caption="YDLV",
-        order=602,
-        method_args={
-            "task_name": "plugins.ydl.tasks.YDLVTask",
-            "parse_links": True,
-            "allowed_hosts": YDLV_HOSTS,
-        },
-    ),
-)
 
-tasks = (
-    YDLSTask,
-    YDLVTask,
+plugin = Plugin(
+    name="ydl",
+    settings=settings,
+    commands_router=commands_router,
+    tasks=(YDLSTask, YDLVTask,)
 )
 
 
-__all__ = ("commands_router", "tasks")
+__all__ = ("plugin",)
+

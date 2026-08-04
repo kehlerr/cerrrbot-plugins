@@ -1,28 +1,34 @@
 import os
-from typing import Optional
+import re
+from typing import Callable
 from uuid import uuid4
 
-from common import get_seconds_from_time
-from exceptions import CommandArgsValidationError, EmptyCommandArgsError
 from httpx import URL
-from pydantic import ValidationError
+from pydantic import HttpUrl, ValidationError
+
+from app.exceptions import CommandArgsValidationError, EmptyCommandArgsError
 
 from .api import dl_exec
 from .models import YDLCommandArgs
-from .settings import YDL_DEFAULT_DIRECTORY_DST, YDLS_DEFAULT_TIMEOUT
+from .settings import settings
+from .utils import get_seconds_from_time
+
+
+def _sanitize_filename(name: str) -> str:
+    return re.sub(r'[\\/:*?"<>|]', '_', name)
 
 
 class YDLRequestHandler:
-    DEFAULT_TIMEOUT: float
+    DEFAULT_TIMEOUT = settings.default_timeout
 
-    def __init__(self, *args) -> None:
-        self._dl_args = self._parse_dl_cmd_args(*args)
+    def __init__(self, url: str, timeout: int | float | str | None = None) -> None:
+        self._dl_args = self._parse_dl_cmd_args(url, timeout)
         self.request_id: str = uuid4().hex
 
     async def execute(
         self,
-        before_exec: Optional[callable] = None,
-        after_exec: Optional[callable] = None,
+        before_exec: Callable | None = None,
+        after_exec: Callable | None = None,
     ) -> None:
         if before_exec is not None:
             before_exec_result = await before_exec(self.request_id, self._dl_args)
@@ -35,60 +41,68 @@ class YDLRequestHandler:
             await after_exec(dl_result, before_exec_result)
 
     def _parse_dl_cmd_args(
-        self, url: str, timeout: Optional[int | float] = None
+        self, url: str, timeout: int | float | str | None = None
     ) -> YDLCommandArgs:
         if not url:
             raise EmptyCommandArgsError("Need specify url to download")
 
         if timeout is not None:
             try:
-                timeout = get_seconds_from_time(timeout)
-                if timeout <= 0:
+                parsed_timeout = get_seconds_from_time(timeout)
+                if parsed_timeout <= 0:
                     raise CommandArgsValidationError(
-                        f"Timeout must be greater 0: {timeout}"
+                        f"Timeout must be greater than 0: {parsed_timeout}"
                     )
             except ValueError:
                 raise CommandArgsValidationError(f"Invalid timeout value: {timeout}")
         else:
-            timeout = self.DEFAULT_TIMEOUT
+            parsed_timeout = self.DEFAULT_TIMEOUT
 
-        directory_dst = self._prepare_directory_dst(url) or YDL_DEFAULT_DIRECTORY_DST
+        directory_dst = self._prepare_directory_dst(url) or settings.data_directory
         try:
-            return YDLCommandArgs(url=url, timeout=timeout, directory_dst=directory_dst)
+            return YDLCommandArgs(url=HttpUrl(url), timeout=parsed_timeout, directory_dst=directory_dst)
         except ValidationError as exc:
             raise CommandArgsValidationError(f"{exc}\nInvalid args: {url}; {timeout}")
 
-    def _prepare_directory_dst(self, *args, **kwargs) -> str | None:
+    def _prepare_directory_dst(self, url: str) -> str | None:
         raise NotImplementedError
 
 
 class YDLSRequestHandler(YDLRequestHandler):
-    DEFAULT_TIMEOUT: float = YDLS_DEFAULT_TIMEOUT
-
-    def _prepare_directory_dst(cls, url: str) -> str | None:
-        _url = URL(url)
-        host_part: str = _url.host.split(".")[-2]
-        path_part: str = _url.path.rstrip(os.path.sep).split(os.path.sep)[-1]
-        if host_part and path_part:
-            dir_name: str = f"[{host_part}] {path_part}"
-            return os.path.join(YDL_DEFAULT_DIRECTORY_DST, dir_name)
+    def _prepare_directory_dst(self, url: str) -> str | None:
+        try:
+            _url = URL(url)
+            host_parts = _url.host.split(".")
+            host_part = host_parts[-2] if len(host_parts) >= 2 else _url.host
+            path_part = _url.path.rstrip("/\\").split("/")[-1]
+            if host_part and path_part:
+                dir_name = _sanitize_filename(f"[{host_part}] {path_part}")
+                return os.path.join(settings.data_directory, dir_name)
+        except Exception:
+            pass
+        return settings.data_directory
 
 
 class YDLVRequestHandler(YDLRequestHandler):
-    DEFAULT_TIMEOUT: float = -1.0
+    DEFAULT_TIMEOUT = -1
     SUBDIR_KEYS: tuple[str, ...] = ("plname",)
 
     def _prepare_directory_dst(self, url: str) -> str:
-        _url = URL(url)
-        host_part: str = _url.host.split(".")[-2]
-        dir_path: str = YDL_DEFAULT_DIRECTORY_DST
-        if host_part:
-            dir_path = os.path.join(dir_path, f"[{host_part}]")
+        dir_path: str = settings.data_directory
+        try:
+            _url = URL(url)
+            host_parts = _url.host.split(".")
+            host_part = host_parts[-2] if len(host_parts) >= 2 else _url.host
+            if host_part:
+                dir_path = os.path.join(dir_path, f"[{_sanitize_filename(host_part)}]")
 
-        for key in self.SUBDIR_KEYS:
-            param_value = _url.params.get(key)
-            if param_value:
-                dir_path = os.path.join(dir_path, param_value)
-                break
+            for key in self.SUBDIR_KEYS:
+                param_value = _url.params.get(key)
+                if param_value:
+                    dir_path = os.path.join(dir_path, _sanitize_filename(param_value))
+                    break
+        except Exception:
+            pass
 
         return dir_path
+

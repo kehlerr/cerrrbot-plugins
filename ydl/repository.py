@@ -1,12 +1,12 @@
+from app.infrastructure import make_redis_client
+from app.repositories.cached_model_repository import CachedModelRepository
+from app.repositories.exceptions import EntryNotFoundError
 
-from repositories.cache import CacheRepositoryBase
-
-from repositories.exceptions import EntryNotFoundError
 from .models import YDLCommandArgs
 
 
-class YDLArgsRepository(CacheRepositoryBase):
-    model_cls = YDLCommandArgs
+class YDLArgsRepository(CachedModelRepository[YDLCommandArgs]):
+    model_class = YDLCommandArgs
     KEY_PREFIX = "YDL"
 
     async def is_exists(self, request_id: str, request: YDLCommandArgs) -> bool:
@@ -17,20 +17,13 @@ class YDLArgsRepository(CacheRepositoryBase):
         else:
             return True
 
-        all_requests = await self.get_all()
-        for stored_request in all_requests.values():
-            if request.url == stored_request.url:
+        async for _, stored_request in self.iter_all():
+            if str(request.url) == str(stored_request.url):
                 return True
 
         return False
 
 
-_repo: YDLArgsRepository | None = None
-
-
 async def get_repo() -> YDLArgsRepository:
-    global _repo
-    if _repo is None:
-        _repo = YDLArgsRepository()
-        await _repo.init_client()
-    return _repo
+    redis_client = await make_redis_client()
+    return YDLArgsRepository(redis_client)

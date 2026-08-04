@@ -1,58 +1,69 @@
 import re
 
-import requests
+import httpx
 from trilium_py.client import ETAPI
 
-from .settings import (
-    TRILIUM_NOTE_ID_BOOK_NOTES_ALL,
-    TRILIUM_NOTE_ID_BOOK_ROOT,
-    TRILIUM_NOTE_ID_BOOKMARKS_URL,
-    TRILIUM_TOKEN,
-    TRILIUM_URL,
-)
+from .settings import settings
 
-trilium_client = ETAPI(TRILIUM_URL, TRILIUM_TOKEN)
+trilium_client = ETAPI(settings.url, settings.token)
 
 urlregex = (
     r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
 )
 
 
+def extract_note_title(message_text: str) -> str:
+    text = message_text.strip().replace('\n', ' ')
+    if len(text) <= 50:
+        return text
+
+    subset = text[:50]
+    last_comma_or_dot = max(subset.rfind(','), subset.rfind('.'))
+
+    if last_comma_or_dot != -1:
+        return subset[:last_comma_or_dot].strip()
+
+    if subset[-1].isalnum() and text[50].isalnum():
+        return subset[:47] + "..."
+    else:
+        return subset.strip()
+
+
 def add_bookmark_urls(text_links: list[str]) -> bool:
     urls = set(text_links)
-    existing_content = trilium_client.get_note_content(TRILIUM_NOTE_ID_BOOKMARKS_URL)
+    existing_content = trilium_client.get_note_content(settings.note_id_bookmarks_url)
     adding_content = _horizontal_line() + _paragraph(
         "<br>".join(_link(url) for url in urls)
     )
     new_content = existing_content + adding_content
     result = trilium_client.update_note_content(
-        TRILIUM_NOTE_ID_BOOKMARKS_URL, new_content
+        settings.note_id_bookmarks_url, new_content
     )
     return result
 
 
-def add_note(message_text: str, forward_from_id: str, forward_from_title: str) -> bool:
-    title = message_text[:10]
-
+def add_note(message_text: str, chat_id: str, source_title: str | None) -> str | None:
     content = _transform_message_text(message_text)
     content = "<br>".join(content.split("\n"))
 
-    parent_note_id = TRILIUM_NOTE_ID_BOOK_NOTES_ALL
-    if forward_from_id:
-        if "-" in forward_from_id:
-            forward_from_id = forward_from_id.replace("-", "")
-        parent_note_id = create_or_get_parent_note(
-            TRILIUM_NOTE_ID_BOOK_NOTES_ALL, forward_from_id, forward_from_title
-        )
+    if "-" in chat_id:
+        chat_id = chat_id.replace("-", "")
 
+    parent_note_title = source_title or chat_id
+
+    parent_note_id = create_or_get_parent_note(
+        settings.note_id_book_notes_all, chat_id, parent_note_title
+    )
+
+    note_title = extract_note_title(message_text)
     result = trilium_client.create_note(
-        parentNoteId=parent_note_id or TRILIUM_NOTE_ID_BOOK_NOTES_ALL,
-        title=title,
+        parentNoteId=parent_note_id,
+        title=note_title,
         type="text",
         content=content,
     )
 
-    return bool(result.get("note"))
+    return parent_note_title if result else None
 
 
 def _link(content: str) -> str:
@@ -73,51 +84,55 @@ def _transform_message_text(content: str):
     )
 
 
-def create_or_get_parent_note(
-    parent_note_id: str, forward_from_id: str, title: str
-) -> str:
-    result = trilium_client.get_note(forward_from_id)
-    if result.get("status") != requests.codes.NOT_FOUND:
-        return forward_from_id
+def create_or_get_parent_note(parent_note_id: str, note_id: str, title: str) -> str:
+    result = trilium_client.get_note(note_id)
+    if result.get("status") == httpx.codes.NOT_FOUND:
+        result = trilium_client.create_note(
+            parentNoteId=parent_note_id,
+            title=title,
+            type="book",
+            content="none",
+            noteId=note_id,
+        )
 
-    result = trilium_client.create_note(
-        parentNoteId=parent_note_id,
-        title=title or forward_from_id,
-        type="book",
-        content="none",
-        noteId=forward_from_id,
-    )
-    return result and forward_from_id
+    try:
+        note_id = result["note"]["noteId"]
+    except KeyError:
+        note_id = result["noteId"]
+
+    return note_id
 
 
 def init_notes():
-    response = trilium_client.get_note(TRILIUM_NOTE_ID_BOOK_ROOT)
-    if "noteId" in response:
-        return
 
-    trilium_client.create_note(
+    note_id_book_root = settings.note_id_book_root
+
+    response = trilium_client.create_note(
         parentNoteId="root",
         title="[TG] Cerrrbot",
         type="book",
-        content="none",
-        noteId=TRILIUM_NOTE_ID_BOOK_ROOT,
+        content="CerrrBot Root Book",
+        noteId=note_id_book_root
     )
 
-    trilium_client.create_note(
-        parentNoteId=TRILIUM_NOTE_ID_BOOK_ROOT,
+    response = trilium_client.create_note(
+        parentNoteId=settings.note_id_book_root,
         title="[TG] Bookmarks URLs",
         type="text",
         content="<hr>",
-        noteId=TRILIUM_NOTE_ID_BOOKMARKS_URL,
+        noteId=settings.note_id_bookmarks_url,
     )
 
-    trilium_client.create_note(
-        parentNoteId=TRILIUM_NOTE_ID_BOOK_ROOT,
+    response = trilium_client.create_note(
+        parentNoteId=settings.note_id_book_root,
         title="[TG] All notes",
-        type="text",
-        content="",
-        noteId=TRILIUM_NOTE_ID_BOOK_NOTES_ALL,
+        type="book",
+        content="CerrrBot message notes book",
+        noteId=settings.note_id_book_notes_all,
     )
 
 
-init_notes()
+if settings.enabled:
+    response_check = trilium_client.get_note(settings.note_id_book_root)
+    if response_check.get("status") == httpx.codes.NOT_FOUND:
+        init_notes()

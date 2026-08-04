@@ -1,19 +1,69 @@
-from models.message_document import MessageDocument
-from plugins.base import AsyncTask
-from services.notifications import Notification, push_message_notification
+import logging
+import re
+from typing import Any, Iterable
 
-from .helper import TelegraphDownloader
+from dishka.integrations.aiogram import FromDishka, inject
+
+from app.models.message_action import CustomMessageAction
+from app.notifications import Notification, NotificationService
+from app.plugins.base import AsyncTask
+from app.savmes import SavmesService
+
+from .helper import TelegraphDownloader, TelegraphDownloadResult
+from .settings import settings
+
+
+logger = logging.getLogger("cerrrbot")
+
+TELEGRAPH_URL_PATTERN = re.compile(r"^https?://telegra\.ph/[a-zA-Z0-9_-]+/?$")
 
 
 class TelegraphScrapeTask(AsyncTask):
-    async def arun_impl(self, links: list[str], *args, msgdoc_id: str, **kwargs) -> None:
-        for link in links:
-            downloader = TelegraphDownloader(link)
-            await downloader.download()
 
-        await push_message_notification(
+    name = "TelegraphScrapeTask"
+
+    action = CustomMessageAction(
+        code="TGHP_DL",
+        caption="Telegraph DL",
+        order=600,
+        executor_args={
+            "task_name": name,
+            "parse_links": True,
+            "allowed_hosts": settings.hosts
+        },
+    )
+
+    @inject
+    async def arun_impl(
+        self,
+        links: Iterable[str],
+        *args: Any,
+        savmes_service: FromDishka[SavmesService],
+        notification_service: FromDishka[NotificationService],
+        msgdoc_id: str,
+        **_: Any,
+    ) -> None:
+        if not (msgdoc := await savmes_service.get_msgdoc_by_id(msgdoc_id)):
+            logger.warning(f"Message document [{msgdoc_id}] not found. Aborting {self.name}.")
+            return
+
+        links = {link for link in links if TELEGRAPH_URL_PATTERN.match(link)}
+        if not links:
+            logger.warning(f"No valid Telegraph links provided to {self.name}.")
+            return
+
+        results: list[TelegraphDownloadResult] = []
+
+        async with TelegraphDownloader() as downloader:
+            for link in links:
+                result = await downloader.download(link)
+                results.append(result)
+
+        notification_text = "\n".join(res.get_result_info() for res in results)
+
+        await notification_service.push_message_notification(
             Notification(
-                text=downloader.get_result_info(),
-                reply_to_message_id=MessageDocument(msgdoc_id).message_id,
+                text=notification_text,
+                reply_to_message_id=msgdoc.message_id,
             )
         )

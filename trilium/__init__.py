@@ -1,28 +1,13 @@
-from models import CustomMessageAction
+from app.plugins.base import Plugin
 
+from .settings import settings
 from .tasks import TriliumBookmark, TriliumNote
 
-actions = (
-    CustomMessageAction(
-        code="CST_NOTE",
-        caption="Note",
-        order=501,
-        method_args={
-            "task_name": "plugins.trilium.tasks.TriliumNote",
-            "is_instant": True,
-            "regex": "*",
-        },
-    ),
-    CustomMessageAction(
-        code="CST_BOOK",
-        caption="Bookmark",
-        order=502,
-        method_args={
-            "task_name": "plugins.trilium.tasks.TriliumBookmark",
-            "is_instant": True,
-            "parse_links": True,
-        },
-    ),
+plugin = Plugin(
+    name="trilium",
+    settings=settings,
+    tasks=(TriliumNote, TriliumBookmark),
 )
 
-tasks = (TriliumNote, TriliumBookmark)
+__all__ = ("plugin",)
+
