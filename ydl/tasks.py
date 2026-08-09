@@ -71,7 +71,7 @@ class YDLVTask(YDLTask):
         executor_args={
             "task_name": name,
             "parse_links": True,
-            "allowed_hosts": settings.hosts,
+            "allowed_hosts": settings.v_hosts,
         },
     )
 
@@ -88,7 +88,7 @@ class YDLSTask(YDLTask):
         executor_args={
             "task_name": name,
             "parse_links": True,
-            "allowed_hosts": settings.hosts,
+            "allowed_hosts": settings.s_hosts,
         },
     )
 
