@@ -1,8 +1,8 @@
-import logging
 import re
 from typing import Any, Iterable
 
 from dishka.integrations.aiogram import FromDishka, inject
+from loguru import logger
 
 from app.models.message_action import CustomMessageAction
 from app.notifications import Notification, NotificationService
@@ -12,8 +12,6 @@ from app.savmes import SavmesService
 from .helper import TelegraphDownloader, TelegraphDownloadResult
 from .settings import settings
 
-
-logger = logging.getLogger("cerrrbot")
 
 TELEGRAPH_URL_PATTERN = re.compile(r"^https?://telegra\.ph/[a-zA-Z0-9_-]+/?$")
 

@@ -1,10 +1,8 @@
-import logging
+from loguru import logger
 
 from .dl_request_manager import DLRequestManager
 from .models import YDLCommandArgs, YDLErrorCode, YDLRequestResult
 from .repository import get_repo
-
-logger = logging.getLogger("cerrrbot")
 
 
 _dl_request_manager: DLRequestManager | None = None

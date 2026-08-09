@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 from functools import partial
 
 from aiogram import Bot, F, Router
@@ -20,7 +20,6 @@ from .api import dl_stop, get_reply_text_from_result
 from .dl_request import YDLSRequestHandler, YDLVRequestHandler
 from .models import CommandActions, CommandStates, YDLCommandArgs, YDLRequestResult, YDLSMessageData
 
-logger = logging.getLogger("cerrrbot")
 router = Router()
 
 

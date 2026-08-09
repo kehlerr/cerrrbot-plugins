@@ -1,17 +1,14 @@
-import asyncio
 from dataclasses import dataclass
-import logging
 import os
 import re
 from typing import Any, Self
 
 import aiofiles
 import httpx
+from loguru import logger
 from httpx import URL, Response
 
 from app.file_ops import create_directory
-
-logger = logging.getLogger("cerrrbot")
 
 
 SEARCH_REGEX = r'(img|video)\ssrc="(?P<file_url>[^"]+)"'

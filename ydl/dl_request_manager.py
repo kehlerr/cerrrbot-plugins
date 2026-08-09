@@ -1,5 +1,5 @@
 import asyncio
-import logging
+from loguru import logger
 import signal
 from datetime import datetime
 
@@ -8,8 +8,6 @@ import psutil
 from .models import YDLCommandArgs, YDLErrorCode, YDLRequestData, YDLRequestResult
 from .repository import YDLArgsRepository
 from .settings import settings
-
-logger = logging.getLogger("cerrrbot")
 
 
 class DLRequestManager:

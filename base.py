@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from typing import Any, ClassVar, Iterable, get_origin
 
 from aiogram import Router
@@ -10,9 +9,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.ioc import get_app_container
 from app.models.message_action import CustomMessageAction
-
-logger = logging.getLogger("cerrrbot")
-
 
 
 class PluginSettings(BaseSettings):

@@ -1,5 +1,4 @@
-from functools import partial
-import logging
+from loguru import logger
 from typing import Any, Iterable
 
 from dishka.integrations.aiogram import FromDishka, inject
@@ -13,8 +12,6 @@ from .api import dl_stop, get_reply_text_from_result
 from .dl_request import YDLRequestHandler, YDLSRequestHandler, YDLVRequestHandler
 from .models import YDLRequestResult
 from .settings import settings
-
-logger = logging.getLogger("cerrrbot")
 
 
 class YDLTask(AsyncTask):

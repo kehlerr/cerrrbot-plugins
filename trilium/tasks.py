@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 from typing import Any
 
 from dishka.integrations.aiogram import FromDishka, inject
@@ -9,8 +9,6 @@ from app.plugins.base import AsyncTask
 from app.savmes import SavmesService
 
 from .helper import add_bookmark_urls, add_note
-
-logger = logging.getLogger("cerrrbot")
 
 
 class TriliumNote(AsyncTask):
