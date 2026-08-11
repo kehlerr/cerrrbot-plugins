@@ -62,7 +62,6 @@ class TriliumNote(AsyncTask):
         )
 
 
-
 class TriliumBookmark(AsyncTask):
 
     name = "TriliumBookmark"

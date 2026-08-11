@@ -1,4 +1,5 @@
 import re
+from typing import Any
 
 import httpx
 from trilium_py.client import ETAPI
@@ -103,11 +104,11 @@ def create_or_get_parent_note(parent_note_id: str, note_id: str, title: str) -> 
     return note_id
 
 
-def init_notes():
+def _init_notes() -> None:
 
     note_id_book_root = settings.note_id_book_root
 
-    response = trilium_client.create_note(
+    trilium_client.create_note(
         parentNoteId="root",
         title="[TG] Cerrrbot",
         type="book",
@@ -115,7 +116,7 @@ def init_notes():
         noteId=note_id_book_root
     )
 
-    response = trilium_client.create_note(
+    trilium_client.create_note(
         parentNoteId=settings.note_id_book_root,
         title="[TG] Bookmarks URLs",
         type="text",
@@ -123,7 +124,7 @@ def init_notes():
         noteId=settings.note_id_bookmarks_url,
     )
 
-    response = trilium_client.create_note(
+    trilium_client.create_note(
         parentNoteId=settings.note_id_book_root,
         title="[TG] All notes",
         type="book",
@@ -132,7 +133,7 @@ def init_notes():
     )
 
 
-if settings.enabled:
+async def ensure_notebook_initialized(*args: Any, **_: Any) -> None:
     response_check = trilium_client.get_note(settings.note_id_book_root)
     if response_check.get("status") == httpx.codes.NOT_FOUND:
-        init_notes()
+        _init_notes()

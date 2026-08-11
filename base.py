@@ -2,9 +2,10 @@ import asyncio
 from typing import Any, ClassVar, Iterable, get_origin
 
 from aiogram import Router
-from celery import Task
 from celery.contrib.abortable import AbortableTask
+from dishka import AsyncContainer, Provider
 from pydantic import Field, model_validator
+from typing import Callable, Awaitable
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.ioc import get_app_container
@@ -118,6 +119,8 @@ class Plugin:
     settings: PluginSettings | None = None
     commands_router: Router | None = None
     tasks: Iterable[type[AsyncTask]] = ()
+    providers: Iterable[Provider] = ()
+    on_startup_hook: Callable[[AsyncContainer], Awaitable[None]] | None = None
     _actions: Iterable[CustomMessageAction] = ()
 
     def __init__(
@@ -126,6 +129,8 @@ class Plugin:
         settings: PluginSettings | None = None,
         commands_router: Router | None = None,
         tasks: Iterable[type[AsyncTask]] | None = None,
+        providers: Iterable[Provider] | None = None,
+        on_startup_hook: Callable[[AsyncContainer], Awaitable[None]] | None = None,
         actions: Iterable[CustomMessageAction] | None = None,
     ) -> None:
         if name is not None:
@@ -136,6 +141,10 @@ class Plugin:
             self.commands_router = commands_router
         if tasks is not None:
             self.tasks = tasks
+        if providers is not None:
+            self.providers = providers
+        if on_startup_hook is not None:
+            self.on_startup_hook = on_startup_hook
         if actions is not None:
             self._actions = actions
 
