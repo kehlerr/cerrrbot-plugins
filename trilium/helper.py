@@ -2,6 +2,7 @@ import re
 from typing import Any
 
 import httpx
+from loguru import logger
 from trilium_py.client import ETAPI
 
 from .settings import settings
@@ -106,6 +107,8 @@ def create_or_get_parent_note(parent_note_id: str, note_id: str, title: str) -> 
 
 def _init_notes() -> None:
 
+    logger.info("Initializing notes and root notebook...")
+
     note_id_book_root = settings.note_id_book_root
 
     trilium_client.create_note(
@@ -131,6 +134,8 @@ def _init_notes() -> None:
         content="CerrrBot message notes book",
         noteId=settings.note_id_book_notes_all,
     )
+
+    logger.info("Initializing completed.")
 
 
 async def ensure_notebook_initialized(*args: Any, **_: Any) -> None:
