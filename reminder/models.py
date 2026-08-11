@@ -1,6 +1,12 @@
 from pydantic import BaseModel, Field
 
+from app.notifications import Notification
+
 from .constants import TimeUnit, Weekday
+
+
+class Reminder(Notification):
+    is_repeatable: bool = False
 
 
 class ReminderParamsExtracted(BaseModel):
@@ -52,3 +58,7 @@ class ReminderParamsExtracted(BaseModel):
         default=1,
         description="Number of times to send. Set to -1 for infinitely repeating (periodic) tasks. Otherwise set to 1."
     )
+
+    @property
+    def is_repeatable(self) -> bool:
+        return all((self.repeat_unit, self.repeat_value))

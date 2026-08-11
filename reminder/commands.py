@@ -1,37 +1,43 @@
-import logging
-import os
 from datetime import datetime
+from typing import Any
 
 from aiogram import Router
 from aiogram.filters import Command, CommandObject
-from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
-from groq import AsyncGroq
+from dishka.integrations.aiogram import FromDishka, inject
+from loguru import logger
 
-from services.notifications import push_message_notification
+from app.notifications import NotificationService
 
-from .reminder_service import ReminderService
+from .exceptions import FailedParsingReminderError
+from .handlers import add_reminder
+from .services import ReminderService
 
-
-logger = logging.getLogger("cerrrbot")
 
 router = Router()
 
-reminder_service = ReminderService(AsyncGroq(api_key=os.environ.get("GROQ_API_KEY")))
-
 
 @router.message(Command("remind", ignore_case=True))
-async def remind_cmd(message: Message, command: CommandObject, state: FSMContext) -> None:
+@inject
+async def remind_cmd(
+    message: Message,
+    command: CommandObject,
+    reminder_service: FromDishka[ReminderService],
+    notification_service: FromDishka[NotificationService],
+    *args: Any,
+    **kwargs: Any
+) -> None:
+
     if not (remind_text := command.text):
         await message.reply("Введите текст напоминания")
         return
 
-    if not (result_parsed := await reminder_service.parse_reminder_input(remind_text)):
+    try:
+        reminder = await add_reminder(remind_text, message.chat.id, reminder_service, notification_service)
+    except FailedParsingReminderError:
+        logger.exception("Error occured on adding new reminder")
         await message.reply("Не удалось распознать напоминание :(")
         return
 
-    reminder_notification = reminder_service.build_reminder_notification(message.chat.id, result_parsed)
-    await push_message_notification(reminder_notification)
-
-    readable_time = datetime.fromtimestamp(reminder_notification.send_at).strftime("%Y-%m-%d %H:%M")
+    readable_time = datetime.fromtimestamp(reminder.send_at).strftime("%Y-%m-%d %H:%M")
     await message.reply(f"✅ Напоминание запланировано: {readable_time}")
