@@ -1,6 +1,6 @@
 import os
 import re
-from typing import Callable
+from collections.abc import Callable
 from uuid import uuid4
 
 from httpx import URL
@@ -15,7 +15,7 @@ from .utils import get_seconds_from_time
 
 
 def _sanitize_filename(name: str) -> str:
-    return re.sub(r'[\\/:*?"<>|]', '_', name)
+    return re.sub(r'[\\/:*?"<>|]', "_", name)
 
 
 class YDLRequestHandler:
@@ -40,9 +40,7 @@ class YDLRequestHandler:
         if after_exec is not None:
             await after_exec(dl_result, before_exec_result)
 
-    def _parse_dl_cmd_args(
-        self, url: str, timeout: int | float | str | None = None
-    ) -> YDLCommandArgs:
+    def _parse_dl_cmd_args(self, url: str, timeout: int | float | str | None = None) -> YDLCommandArgs:
         if not url:
             raise EmptyCommandArgsError("Need specify url to download")
 
@@ -50,11 +48,9 @@ class YDLRequestHandler:
             try:
                 parsed_timeout = get_seconds_from_time(timeout)
                 if parsed_timeout <= 0:
-                    raise CommandArgsValidationError(
-                        f"Timeout must be greater than 0: {parsed_timeout}"
-                    )
-            except ValueError:
-                raise CommandArgsValidationError(f"Invalid timeout value: {timeout}")
+                    raise CommandArgsValidationError(f"Timeout must be greater than 0: {parsed_timeout}")
+            except ValueError as exc:
+                raise CommandArgsValidationError(f"Invalid timeout value: {timeout}") from exc
         else:
             parsed_timeout = self.DEFAULT_TIMEOUT
 
@@ -62,7 +58,7 @@ class YDLRequestHandler:
         try:
             return YDLCommandArgs(url=HttpUrl(url), timeout=parsed_timeout, directory_dst=directory_dst)
         except ValidationError as exc:
-            raise CommandArgsValidationError(f"{exc}\nInvalid args: {url}; {timeout}")
+            raise CommandArgsValidationError(f"{exc}\nInvalid args: {url}; {timeout}") from exc
 
     def _prepare_directory_dst(self, url: str) -> str | None:
         raise NotImplementedError
@@ -105,4 +101,3 @@ class YDLVRequestHandler(YDLRequestHandler):
             pass
 
         return dir_path
-

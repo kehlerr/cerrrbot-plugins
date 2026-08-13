@@ -2,7 +2,6 @@ import asyncio
 from enum import IntEnum
 
 from aiogram.filters.callback_data import CallbackData
-
 from aiogram.fsm.state import State, StatesGroup
 from pydantic import BaseModel, HttpUrl
 
@@ -15,7 +14,6 @@ class YDLErrorCode(IntEnum):
 
 class CommandStates(StatesGroup):
     waiting_url = State()
-
 
 
 class CommandActions:
@@ -75,4 +73,3 @@ class YDLRequestData(BaseModel):
     proc: asyncio.subprocess.Process | None = None
     started_at: float | None = None
     finished_at: float | None = None
-

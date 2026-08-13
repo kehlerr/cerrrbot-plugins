@@ -4,7 +4,6 @@ from .dl_request_manager import DLRequestManager
 from .models import YDLCommandArgs, YDLErrorCode, YDLRequestResult
 from .repository import get_repo
 
-
 _dl_request_manager: DLRequestManager | None = None
 
 
@@ -15,7 +14,6 @@ async def _get_request_manager() -> DLRequestManager:
         _dl_request_manager = DLRequestManager(repo)
 
     return _dl_request_manager
-
 
 
 async def dl_exec(request_id: str, request_args: YDLCommandArgs) -> YDLRequestResult:
@@ -41,7 +39,6 @@ def get_reply_text_from_result(result: YDLRequestResult | None) -> str:
     if result.errorcode == YDLErrorCode.DUPLICATED_REQUEST:
         return "URL is already processing"
 
-
     errors_text = result.errors_text or ""
     success_outputs: tuple[str, ...] = ("Interrupted by user", "Exiting normally")
     is_really_failed: bool = False
@@ -64,4 +61,3 @@ def get_reply_text_from_result(result: YDLRequestResult | None) -> str:
         reply_text += f"; elapsed {result.elapsed:.2f} seconds"
 
     return reply_text
-

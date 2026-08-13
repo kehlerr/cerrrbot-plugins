@@ -1,4 +1,3 @@
-from loguru import logger
 from functools import partial
 
 from aiogram import Bot, F, Router
@@ -13,6 +12,7 @@ from aiogram.types import (
     ReplyKeyboardMarkup,
     ReplyKeyboardRemove,
 )
+from loguru import logger
 
 from app.exceptions import CommandArgsValidationError, EmptyCommandArgsError
 
@@ -26,9 +26,7 @@ router = Router()
 @router.message(CommandStates.waiting_url, F.text.casefold() == "cancel")
 async def on_cancel_start(message: Message, bot: Bot, state: FSMContext) -> None:
     try:
-        replied_message = await message.answer(
-            "canceled", reply_markup=ReplyKeyboardRemove()
-        )
+        replied_message = await message.answer("canceled", reply_markup=ReplyKeyboardRemove())
         await replied_message.delete()
         await message.delete()
     except Exception as exc:
@@ -37,9 +35,7 @@ async def on_cancel_start(message: Message, bot: Bot, state: FSMContext) -> None
 
 
 @router.callback_query(YDLSMessageData.filter(F.action == CommandActions.STOP))
-async def on_action_pressed(
-    query: CallbackQuery, callback_data: YDLSMessageData
-) -> None:
+async def on_action_pressed(query: CallbackQuery, callback_data: YDLSMessageData) -> None:
     await dl_stop(callback_data.id)
     try:
         await query.answer("Stop requested")
@@ -78,9 +74,7 @@ async def _run_cmd(cmd_name: str, cmd_args: str, message: Message, state: FSMCon
     await handler.execute(before_exec=before_exec, after_exec=after_exec)
 
 
-async def _on_empty_cmd_args(
-    message: Message, state: FSMContext, cmd_name: str
-) -> None:
+async def _on_empty_cmd_args(message: Message, state: FSMContext, cmd_name: str) -> None:
     await state.set_state(CommandStates.waiting_url)
     await state.update_data(cmd_name=cmd_name)
     await message.reply(
@@ -96,9 +90,7 @@ async def _on_empty_cmd_args(
     )
 
 
-async def cmd_on_before_exec(
-    message: Message, request_id: str, dl_args: YDLCommandArgs
-) -> Message:
+async def cmd_on_before_exec(message: Message, request_id: str, dl_args: YDLCommandArgs) -> Message:
     if dl_args.timeout > 0:
         reply_text = f"Download started for {dl_args.timeout} seconds"
     else:
@@ -110,9 +102,7 @@ async def cmd_on_before_exec(
                 [
                     InlineKeyboardButton(
                         text="Stop",
-                        callback_data=YDLSMessageData(
-                            action=CommandActions.STOP, id=request_id
-                        ).pack(),
+                        callback_data=YDLSMessageData(action=CommandActions.STOP, id=request_id).pack(),
                     )
                 ]
             ]
@@ -121,12 +111,9 @@ async def cmd_on_before_exec(
     return replied_message
 
 
-async def cmd_on_after_exec(
-    message: Message, result: YDLRequestResult | None, replied_message: Message
-) -> None:
+async def cmd_on_after_exec(message: Message, result: YDLRequestResult | None, replied_message: Message) -> None:
     await message.reply(get_reply_text_from_result(result))
     try:
         await replied_message.delete()
     except Exception as exc:
         logger.debug(f"[YDL] Error deleting status message: {exc}")
-

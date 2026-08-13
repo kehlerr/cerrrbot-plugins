@@ -1,15 +1,14 @@
-from dataclasses import dataclass
 import os
 import re
+from dataclasses import dataclass
 from typing import Any, Self
 
 import aiofiles
 import httpx
-from loguru import logger
 from httpx import URL, Response
+from loguru import logger
 
 from app.file_ops import create_directory
-
 
 SEARCH_REGEX = r'(img|video)\ssrc="(?P<file_url>[^"]+)"'
 
@@ -63,9 +62,7 @@ class TelegraphDownloader:
             page_content = await self._fetch_page_content(client, parsed_url)
             media_urls = self._parse_page_media(page_content)
             if not media_urls:
-                return TelegraphDownloadResult(
-                    url=url, success=False, error="No media files found"
-                )
+                return TelegraphDownloadResult(url=url, success=False, error="No media files found")
 
             dir_name = parsed_url.path.strip("/").split("/")[-1] or "telegraph_media"
             directory_path = create_directory(dir_name)
@@ -73,9 +70,7 @@ class TelegraphDownloader:
             prepared_media = self._prepare_media_data(parsed_url, media_urls)
             downloaded_count = await self._download_media(client, directory_path, prepared_media)
 
-            return TelegraphDownloadResult(
-                url=url, success=True, media_count=downloaded_count
-            )
+            return TelegraphDownloadResult(url=url, success=True, media_count=downloaded_count)
         except Exception as exc:
             logger.error(f"Request/download error occurred for {url}: {exc}")
             return TelegraphDownloadResult(url=url, success=False, error=str(exc))
@@ -83,22 +78,16 @@ class TelegraphDownloader:
             if close_after:
                 await client.aclose()
 
-    async def _fetch_page_content(
-        self, client: httpx.AsyncClient, url: URL
-    ) -> str:
+    async def _fetch_page_content(self, client: httpx.AsyncClient, url: URL) -> str:
         response: Response = await client.get(url)
         response.raise_for_status()
         return response.text
 
     def _parse_page_media(self, page_content: str) -> list[str]:
         re_pattern = re.compile(SEARCH_REGEX)
-        return [
-            match.group("file_url") for match in re_pattern.finditer(page_content)
-        ]
+        return [match.group("file_url") for match in re_pattern.finditer(page_content)]
 
-    def _prepare_media_data(
-        self, base_url: URL, media_urls: list[str]
-    ) -> list[tuple[URL, str]]:
+    def _prepare_media_data(self, base_url: URL, media_urls: list[str]) -> list[tuple[URL, str]]:
         prepared = []
         for idx, media_path in enumerate(media_urls, start=1):
             raw_name = media_path.split("/")[-1]
@@ -108,9 +97,7 @@ class TelegraphDownloader:
             elif media_path.startswith("/"):
                 media_url = base_url.copy_with(path=media_path)
             else:
-                media_url = base_url.copy_with(
-                    path=base_url.path.rstrip("/") + "/" + media_path
-                )
+                media_url = base_url.copy_with(path=base_url.path.rstrip("/") + "/" + media_path)
             prepared.append((media_url, file_name))
         return prepared
 

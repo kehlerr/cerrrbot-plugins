@@ -1,8 +1,9 @@
-from loguru import logger
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 from groq import AsyncGroq
 from groq.types.chat import ChatCompletion
+from loguru import logger
 from pydantic import ValidationError
 
 from ..constants import REMINDER_SYSTEM_PROMPT
@@ -10,7 +11,6 @@ from ..models import ReminderParamsExtracted
 
 
 class LLMHelper:
-
     _SYSTEM_PROMPT = REMINDER_SYSTEM_PROMPT
     _tools = [
         {
@@ -18,7 +18,7 @@ class LLMHelper:
             "function": {
                 "name": "extract_reminder_parameters",
                 "description": "Extract scheduling parameters and clean text for a new reminder.",
-                "parameters": ReminderParamsExtracted.model_json_schema()
+                "parameters": ReminderParamsExtracted.model_json_schema(),
             },
         }
     ]
@@ -50,7 +50,6 @@ class LLMHelper:
             logger.error("No arguments returned by the model.")
             return None
 
-
         # 6. Validate the raw JSON against our Pydantic model
         try:
             validated_data = ReminderParamsExtracted.model_validate_json(raw_json_arguments)
@@ -72,8 +71,7 @@ class LLMHelper:
                 tool_choice={"type": "function", "function": {"name": "extract_reminder_parameters"}},
                 temperature=0.1,
             )
-        except Exception as exc:
+        except Exception:
             logger.exception("API Error")
 
         return None
-

@@ -1,9 +1,9 @@
-from loguru import logger
 from datetime import datetime, timedelta
 
 from groq import AsyncGroq
+from loguru import logger
 
-from ..models import ReminderParamsExtracted, Reminder
+from ..models import Reminder, ReminderParamsExtracted
 from ..repository import ReminderRepository
 from .datetime_helper import DatetimeHelper
 from .llm_helper import LLMHelper
@@ -48,6 +48,6 @@ class ReminderService:
                 repeat_in=self._datetime_helper.calculate_repeat_seconds(data.repeat_unit, data.repeat_value),
                 send_count=data.send_count,
                 chat_id=chat_id,
-                is_repeatable=data.is_repeatable
+                is_repeatable=data.is_repeatable,
             )
         )

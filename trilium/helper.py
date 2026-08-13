@@ -1,5 +1,5 @@
 import re
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from loguru import logger
@@ -9,18 +9,16 @@ from .settings import settings
 
 trilium_client = ETAPI(settings.url, settings.token)
 
-urlregex = (
-    r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
-)
+urlregex = r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
 
 
 def extract_note_title(message_text: str) -> str:
-    text = message_text.strip().replace('\n', ' ')
+    text = message_text.strip().replace("\n", " ")
     if len(text) <= 50:
         return text
 
     subset = text[:50]
-    last_comma_or_dot = max(subset.rfind(','), subset.rfind('.'))
+    last_comma_or_dot = max(subset.rfind(","), subset.rfind("."))
 
     if last_comma_or_dot != -1:
         return subset[:last_comma_or_dot].strip()
@@ -34,14 +32,9 @@ def extract_note_title(message_text: str) -> str:
 def add_bookmark_urls(text_links: list[str]) -> bool:
     urls = set(text_links)
     existing_content = trilium_client.get_note_content(settings.note_id_bookmarks_url)
-    adding_content = _horizontal_line() + _paragraph(
-        "<br>".join(_link(url) for url in urls)
-    )
+    adding_content = _horizontal_line() + _paragraph("<br>".join(_link(url) for url in urls))
     new_content = existing_content + adding_content
-    result = trilium_client.update_note_content(
-        settings.note_id_bookmarks_url, new_content
-    )
-    return result
+    return cast(bool, trilium_client.update_note_content(settings.note_id_bookmarks_url, new_content))
 
 
 def add_note(message_text: str, chat_id: str, source_title: str | None) -> str | None:
@@ -53,9 +46,7 @@ def add_note(message_text: str, chat_id: str, source_title: str | None) -> str |
 
     parent_note_title = source_title or chat_id
 
-    parent_note_id = create_or_get_parent_note(
-        settings.note_id_book_notes_all, chat_id, parent_note_title
-    )
+    parent_note_id = create_or_get_parent_note(settings.note_id_book_notes_all, chat_id, parent_note_title)
 
     note_title = extract_note_title(message_text)
     result = trilium_client.create_note(
@@ -81,9 +72,7 @@ def _horizontal_line() -> str:
 
 
 def _transform_message_text(content: str):
-    return re.sub(
-        urlregex, lambda x: '<a href="{}">{}</a>'.format(x.group(), x.group()), content
-    )
+    return re.sub(urlregex, lambda x: f'<a href="{x.group()}">{x.group()}</a>', content)
 
 
 def create_or_get_parent_note(parent_note_id: str, note_id: str, title: str) -> str:
@@ -112,11 +101,7 @@ def _init_notes() -> None:
     note_id_book_root = settings.note_id_book_root
 
     trilium_client.create_note(
-        parentNoteId="root",
-        title="[TG] Cerrrbot",
-        type="book",
-        content="CerrrBot Root Book",
-        noteId=note_id_book_root
+        parentNoteId="root", title="[TG] Cerrrbot", type="book", content="CerrrBot Root Book", noteId=note_id_book_root
     )
 
     trilium_client.create_note(

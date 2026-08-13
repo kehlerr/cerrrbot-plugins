@@ -1,4 +1,5 @@
 from pydantic import Field
+
 from app.plugins.base import PluginSettings
 
 
@@ -18,5 +19,6 @@ class TriliumSettings(PluginSettings):
     @property
     def url(self) -> str:
         return f"{self.scheme}://{self.host}:{self.port}"
+
 
 settings = TriliumSettings()  # type: ignore

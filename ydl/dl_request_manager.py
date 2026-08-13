@@ -1,9 +1,9 @@
 import asyncio
-from loguru import logger
 import signal
 from datetime import datetime
 
 import psutil
+from loguru import logger
 
 from .models import YDLCommandArgs, YDLErrorCode, YDLRequestData, YDLRequestResult
 from .repository import YDLArgsRepository
@@ -19,18 +19,10 @@ class DLRequestManager:
         url = request_args.url
         is_request_duplicated = await self._repo.is_exists(request_id, request_args)
         if is_request_duplicated:
-            return YDLRequestResult(
-                errorcode=YDLErrorCode.DUPLICATED_REQUEST,
-                errors_info=f"Duplicated request for url: {url}"
-            )
+            return YDLRequestResult(errorcode=YDLErrorCode.DUPLICATED_REQUEST, errors_info=f"Duplicated request for url: {url}")
         await self._repo.insert(request_id, request_args)
 
-        request = YDLRequestData(
-            id=request_id,
-            url=str(url),
-            timeout=request_args.timeout,
-            result=YDLRequestResult()
-        )
+        request = YDLRequestData(id=request_id, url=str(url), timeout=request_args.timeout, result=YDLRequestResult())
         self._requests[request_id] = request
 
         cmd_args = [
@@ -59,11 +51,8 @@ class DLRequestManager:
             request.result.errors_info = f"Failed to spawn yt-dlp process: {exc}"
             return
 
-
         request.started_at = datetime.now().timestamp()
-        logger.info(
-            f"[YDL][{request.id}] Starting subprocess PID {request.proc.pid} at {request.started_at}"
-        )
+        logger.info(f"[YDL][{request.id}] Starting subprocess PID {request.proc.pid} at {request.started_at}")
 
         stdout, stderr = b"", b""
         effective_timeout = request.timeout if (request.timeout and request.timeout > 0) else settings.max_timeout
@@ -72,7 +61,7 @@ class DLRequestManager:
                 request.proc.communicate(),
                 timeout=effective_timeout,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning(f"[YDL][{request.id}] Async task finished by timeout")
             request.result.errors_info = f"Download timed out after {effective_timeout}s"
         except Exception as exc:
@@ -81,9 +70,7 @@ class DLRequestManager:
             logger.info(f"[YDL][{request.id}] Finishing request process")
             await self.finish_request(request.id, stdout=stdout, stderr=stderr)
 
-    async def finish_request(
-        self, request_id: str, stdout: bytes = b"", stderr: bytes = b""
-    ) -> YDLRequestResult | None:
+    async def finish_request(self, request_id: str, stdout: bytes = b"", stderr: bytes = b"") -> YDLRequestResult | None:
         try:
             await self._repo.delete(request_id)
         except Exception:
@@ -111,9 +98,7 @@ class DLRequestManager:
             request.result.errorcode = errorcode
 
         pid_str = request.proc.pid if request.proc else "N/A"
-        logger.info(
-            f"[YDL][{request.id}] Process {pid_str} exited with code: {request.result.errorcode}"
-        )
+        logger.info(f"[YDL][{request.id}] Process {pid_str} exited with code: {request.result.errorcode}")
 
         if stdout:
             request.result.output_info = stdout
@@ -126,9 +111,7 @@ class DLRequestManager:
         if request.started_at and request.finished_at and request.started_at > 0 and request.finished_at > 0:
             request.result.elapsed = request.finished_at - request.started_at
 
-    async def _terminate_proc(
-        self, proc: asyncio.subprocess.Process | None
-    ) -> int | None:
+    async def _terminate_proc(self, proc: asyncio.subprocess.Process | None) -> int | None:
         if proc is None:
             return None
 
@@ -139,18 +122,18 @@ class DLRequestManager:
                 for child in parent.children(recursive=True):
                     try:
                         child.send_signal(signal.SIGINT)
-                    except (psutil.NoSuchProcess, ProcessLookupError):
+                    except psutil.NoSuchProcess, ProcessLookupError:
                         pass
                 try:
                     parent.send_signal(signal.SIGINT)
-                except (psutil.NoSuchProcess, ProcessLookupError):
+                except psutil.NoSuchProcess, ProcessLookupError:
                     pass
-            except (psutil.NoSuchProcess, ProcessLookupError):
+            except psutil.NoSuchProcess, ProcessLookupError:
                 pass
 
             try:
                 await asyncio.wait_for(proc.wait(), timeout=5.0)
-            except (asyncio.TimeoutError, Exception):
+            except TimeoutError, Exception:
                 try:
                     proc.kill()
                 except Exception:
@@ -159,4 +142,3 @@ class DLRequestManager:
             returncode = proc.returncode
 
         return returncode
-

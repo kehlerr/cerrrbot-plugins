@@ -13,7 +13,6 @@ from .exceptions import FailedParsingReminderError
 from .handlers import add_reminder
 from .services import ReminderService
 
-
 router = Router()
 
 
@@ -25,7 +24,7 @@ async def remind_cmd(
     reminder_service: FromDishka[ReminderService],
     notification_service: FromDishka[NotificationService],
     *args: Any,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> None:
 
     if not (remind_text := command.text):

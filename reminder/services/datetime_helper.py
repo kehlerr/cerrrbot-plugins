@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+
 from dateutil.relativedelta import relativedelta
 
 from ..constants import DEFAULT_TIME_OF_DAY, WEEK_LENGTH, TimeUnit, Weekday
@@ -81,4 +82,4 @@ class DatetimeHelper:
             case TimeUnit.WEEKS:
                 return value * 604800
             case TimeUnit.MONTHS:
-                return value * 30 * 86400 
+                return value * 30 * 86400

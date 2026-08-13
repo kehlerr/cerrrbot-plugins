@@ -6,8 +6,8 @@ def get_seconds_from_time(time_interval: int | float | str) -> float:
     if not isinstance(time_interval, str):
         try:
             return float(time_interval)
-        except (ValueError, TypeError):
-            raise ValueError(error_str)
+        except (ValueError, TypeError) as exc:
+            raise ValueError(error_str) from exc
 
     try:
         return float(time_interval)
@@ -37,4 +37,3 @@ def get_seconds_from_time(time_interval: int | float | str) -> float:
         total_seconds += int(value) * unit_value
 
     return float(total_seconds)
-

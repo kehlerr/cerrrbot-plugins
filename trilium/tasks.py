@@ -1,7 +1,7 @@
-from loguru import logger
 from typing import Any
 
 from dishka.integrations.aiogram import FromDishka, inject
+from loguru import logger
 
 from app.models.action_result import ActionResult
 from app.models.message_action import CustomMessageAction
@@ -12,7 +12,6 @@ from .helper import add_bookmark_urls, add_note
 
 
 class TriliumNote(AsyncTask):
-
     name = "TriliumNote"
 
     action = CustomMessageAction(
@@ -50,20 +49,12 @@ class TriliumNote(AsyncTask):
             parent_note_id = None
 
         if not parent_note_id:
-            return ActionResult(
-                success=False,
-                popup_text="Some error occured on adding note, please check logs."
-            )
+            return ActionResult(success=False, popup_text="Some error occured on adding note, please check logs.")
 
-        return ActionResult(
-            success=True,
-            popup_text=f"Note saved successfully in: {parent_note_id}",
-            actions_updated=True
-        )
+        return ActionResult(success=True, popup_text=f"Note saved successfully in: {parent_note_id}", actions_updated=True)
 
 
 class TriliumBookmark(AsyncTask):
-
     name = "TriliumBookmark"
 
     action = CustomMessageAction(

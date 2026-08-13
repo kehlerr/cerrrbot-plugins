@@ -1,5 +1,6 @@
 import re
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from dishka.integrations.aiogram import FromDishka, inject
 from loguru import logger
@@ -12,23 +13,17 @@ from app.savmes import SavmesService
 from .helper import TelegraphDownloader, TelegraphDownloadResult
 from .settings import settings
 
-
 TELEGRAPH_URL_PATTERN = re.compile(r"^https?://telegra\.ph/[a-zA-Z0-9_-]+/?$")
 
 
 class TelegraphScrapeTask(AsyncTask):
-
     name = "TelegraphScrapeTask"
 
     action = CustomMessageAction(
         code="TGHP_DL",
         caption="Telegraph DL",
         order=600,
-        executor_args={
-            "task_name": name,
-            "parse_links": True,
-            "allowed_hosts": settings.hosts
-        },
+        executor_args={"task_name": name, "parse_links": True, "allowed_hosts": settings.hosts},
     )
 
     @inject

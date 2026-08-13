@@ -1,6 +1,5 @@
 from app.infrastructure import make_redis_client
-from app.repositories.cached_model_repository import CachedModelRepository
-from app.repositories.exceptions import EntryNotFoundError
+from app.infrastructure.repositories import CachedModelRepository, EntryNotFoundError
 
 from .models import YDLCommandArgs
 

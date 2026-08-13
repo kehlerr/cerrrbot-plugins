@@ -1,11 +1,11 @@
 import asyncio
-from typing import Any, ClassVar, Iterable, get_origin
+from collections.abc import Awaitable, Callable, Iterable
+from typing import Any, ClassVar, cast, get_origin
 
 from aiogram import Router
 from celery.contrib.abortable import AbortableTask
 from dishka import AsyncContainer, Provider
 from pydantic import Field, model_validator
-from typing import Callable, Awaitable
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.ioc import get_app_container
@@ -26,16 +26,14 @@ class PluginSettings(BaseSettings):
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
         if name := getattr(cls, "NAME", ""):
-            model_config = {**cls.model_config, "env_prefix": f"{name}_"}
-            cls.model_config = SettingsConfigDict(**model_config)
+            cls.model_config = cast(SettingsConfigDict, {**cls.model_config, "env_prefix": f"{name}_"})
 
     @model_validator(mode="before")
     @classmethod
     def _bypass_required_if_disabled(cls, data: dict[str, Any]) -> dict[str, Any]:
         enabled_val = data.get("enabled", True)
-        is_disabled = (
-            enabled_val is False
-            or (isinstance(enabled_val, str) and enabled_val.lower() in ("false", "0", "no", "off"))
+        is_disabled = enabled_val is False or (
+            isinstance(enabled_val, str) and enabled_val.lower() in ("false", "0", "no", "off")
         )
         if not is_disabled:
             return data
@@ -107,8 +105,7 @@ class AsyncTask(AbortableTask):
         except asyncio.CancelledError:
             pass
 
-    async def on_abort(self) -> None:
-        ...
+    async def on_abort(self) -> None: ...
 
     async def arun_impl(self, *args, **kwargs) -> Any:
         raise NotImplementedError

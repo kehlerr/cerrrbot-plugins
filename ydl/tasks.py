@@ -1,7 +1,8 @@
-from loguru import logger
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from dishka.integrations.aiogram import FromDishka, inject
+from loguru import logger
 
 from app.models.message_action import CustomMessageAction
 from app.notifications import Notification, NotificationService
@@ -91,4 +92,3 @@ class YDLSTask(YDLTask):
             "allowed_hosts": settings.s_hosts,
         },
     )
-

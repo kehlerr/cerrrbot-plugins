@@ -2,8 +2,8 @@ import os
 
 from pydantic import Field
 
-from app.plugins.base import PluginSettings
 from app import app_settings
+from app.plugins.base import PluginSettings
 
 
 class YdlSettings(PluginSettings):

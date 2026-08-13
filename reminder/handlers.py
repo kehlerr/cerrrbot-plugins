@@ -1,16 +1,15 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from dishka import AsyncContainer
 from loguru import logger
 
-from app.notifications.service import NotificationService
 from app.notifications.exceptions import PushNotificationError
+from app.notifications.service import NotificationService
 from app.plugins.reminder.exceptions import FailedParsingReminderError
 
-from .services import ReminderService
-
-from .repository import ReminderRepository
 from .models import Reminder
+from .repository import ReminderRepository
+from .services import ReminderService
 
 
 async def on_startup(container: AsyncContainer) -> None:
@@ -25,7 +24,7 @@ async def sync_reminders(notification_service: NotificationService, reminder_rep
 
     logger.info("Syncing reminders...")
 
-    now = int(datetime.now(timezone.utc).timestamp())
+    now = int(datetime.now(UTC).timestamp())
 
     reminders = await reminder_repo.get_many({})
     for reminder in reminders:
@@ -41,7 +40,9 @@ async def sync_reminders(notification_service: NotificationService, reminder_rep
             logger.info(f"Reminder already exists: {reminder.key}")
 
 
-async def add_reminder(remind_text: str, chat_id: int, reminder_service: ReminderService, notification_service: NotificationService) -> Reminder:
+async def add_reminder(
+    remind_text: str, chat_id: int, reminder_service: ReminderService, notification_service: NotificationService
+) -> Reminder:
     if not (result_parsed := await reminder_service.parse_reminder_input(remind_text)):
         raise FailedParsingReminderError
 

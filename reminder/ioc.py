@@ -1,10 +1,11 @@
 from typing import Any
+
 from dishka import Provider, Scope, provide
 from groq import AsyncGroq
 from pymongo.asynchronous.database import AsyncDatabase
 
-from .services import ReminderService
 from .repository import ReminderRepository
+from .services import ReminderService
 from .settings import ReminderSettings
 
 
@@ -14,13 +15,17 @@ class ReminderProvider(Provider):
         self.settings = settings
 
     @provide(scope=Scope.APP)
+    def get_groq_client(self) -> AsyncGroq:
+        return AsyncGroq(api_key=self.settings.groq_api_key)
+
+    @provide(scope=Scope.APP)
     def get_reminder_repository(self, db: AsyncDatabase) -> ReminderRepository:
         return ReminderRepository(db)
 
     @provide(scope=Scope.APP)
-    def get_reminder_service(self, repository: ReminderRepository) -> ReminderService:
+    def get_reminder_service(self, client: AsyncGroq, repository: ReminderRepository) -> ReminderService:
         return ReminderService(
-            AsyncGroq(api_key=self.settings.groq_api_key),
+            client=client,
             model=self.settings.groq_model,
             repository=repository,
         )

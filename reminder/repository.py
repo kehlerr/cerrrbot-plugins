@@ -1,5 +1,6 @@
+from app.infrastructure.repositories import MongoRepository
+
 from .models import Reminder
-from app.repositories.mongo import MongoRepository
 
 
 class ReminderRepository(MongoRepository[Reminder]):
