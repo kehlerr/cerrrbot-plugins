@@ -38,5 +38,5 @@ async def remind_cmd(
         await message.reply("Не удалось распознать напоминание :(")
         return
 
-    readable_time = datetime.fromtimestamp(reminder.send_at).strftime("%Y-%m-%d %H:%M")
+    readable_time = datetime.fromtimestamp(reminder.send_at, tz=reminder_service.timezone).strftime("%Y-%m-%d %H:%M")
     await message.reply(f"✅ Напоминание запланировано: {readable_time}")

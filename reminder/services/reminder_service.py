@@ -1,7 +1,10 @@
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from groq import AsyncGroq
 from loguru import logger
+
+from app import app_settings
 
 from ..models import Reminder, ReminderParamsExtracted
 from ..repository import ReminderRepository
@@ -10,14 +13,21 @@ from .llm_helper import LLMHelper
 
 
 class ReminderService:
-    def __init__(self, client: AsyncGroq, model: str, repository: ReminderRepository) -> None:
+    def __init__(
+        self,
+        client: AsyncGroq,
+        model: str,
+        repository: ReminderRepository,
+        timezone: ZoneInfo | None = None,
+    ) -> None:
+        self.timezone = timezone or getattr(app_settings, "tz", ZoneInfo("UTC"))
         self._llm_helper = LLMHelper(client, model)
-        self._datetime_helper = DatetimeHelper()
+        self._datetime_helper = DatetimeHelper(timezone=self.timezone)
         self.repository = repository
 
     async def parse_reminder_input(self, user_input: str) -> ReminderParamsExtracted | None:
         # 3. Generate dynamic context for the system prompt
-        now = datetime.now().astimezone()
+        now = datetime.now(tz=self.timezone)
         tomorrow = now + timedelta(days=1)
         day_after = now + timedelta(days=2)
 
@@ -30,6 +40,8 @@ class ReminderService:
             "tomorrow_weekday": ENGLISH_WEEKDAYS[tomorrow.weekday()],
             "day_after_tomorrow_date": day_after.strftime("%Y-%m-%d"),
             "day_after_tomorrow_weekday": ENGLISH_WEEKDAYS[day_after.weekday()],
+            "timezone_name": getattr(self.timezone, "key", str(self.timezone)),
+            "timezone_offset": now.strftime("%z"),
         }
 
         extracted_reminder_params = await self._llm_helper.extract_reminder_params(current_context_dates, user_input)

@@ -17,13 +17,15 @@ class ReminderParamsExtracted(BaseModel):
     exact_time_iso: str | None = Field(
         default=None,
         description="""
-            ISO 8601 datetime string.
-            Use ONLY for exact calendar dates or 'today/tomorrow' with a specific time (e.g., '2026-05-18T20:00:00').
+            ISO 8601 datetime string in the user's local timezone (e.g., '2026-05-18T20:00:00').
+            Do NOT convert to UTC or append 'Z'.
+            Use ONLY for exact calendar dates or 'today/tomorrow' with a specific time.
         """,
     )
 
     target_time: str | None = Field(
-        default=None, description="Time in HH:MM format. If time is not explicitly stated, use '12:00'."
+        default=None,
+        description="Time in HH:MM format in the user's local timezone. If time is not explicitly stated, use '12:00'.",
     )
 
     target_weekday: Weekday | None = Field(default=None, description="Target day of the week.")

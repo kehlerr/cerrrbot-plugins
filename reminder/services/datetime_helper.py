@@ -1,6 +1,9 @@
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from dateutil.relativedelta import relativedelta
+
+from app import app_settings
 
 from ..constants import DEFAULT_TIME_OF_DAY, WEEK_LENGTH, TimeUnit, Weekday
 from ..models import ReminderParamsExtracted
@@ -17,20 +20,24 @@ class DatetimeHelper:
         Weekday.SUNDAY: 6,
     }
 
-    @classmethod
-    def calculate_send_at(cls, reminder_params: ReminderParamsExtracted) -> int:
-        now = datetime.now().astimezone()
+    def __init__(self, timezone: ZoneInfo | None = None) -> None:
+        self._tz = timezone or getattr(app_settings, "tz", ZoneInfo("UTC"))
+
+    def calculate_send_at(self, reminder_params: ReminderParamsExtracted) -> int:
+        now = datetime.now(tz=self._tz)
         send_at_dt: datetime = now
 
         if reminder_params.exact_time_iso:
             parsed_dt = datetime.fromisoformat(reminder_params.exact_time_iso)
             if parsed_dt.tzinfo is None:
-                send_at_dt = parsed_dt.replace(tzinfo=now.tzinfo)
+                send_at_dt = parsed_dt.replace(tzinfo=self._tz)
+            elif parsed_dt.tzinfo == UTC and self._tz != UTC:
+                send_at_dt = parsed_dt.replace(tzinfo=None).replace(tzinfo=self._tz)
             else:
-                send_at_dt = parsed_dt
+                send_at_dt = parsed_dt.astimezone(self._tz)
 
         elif reminder_params.target_weekday:
-            target_idx = cls._WEEKDAY_MAP[reminder_params.target_weekday]
+            target_idx = self._WEEKDAY_MAP[reminder_params.target_weekday]
             current_idx = now.weekday()
 
             days_ahead = target_idx - current_idx

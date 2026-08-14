@@ -4,6 +4,8 @@ from dishka import Provider, Scope, provide
 from groq import AsyncGroq
 from pymongo.asynchronous.database import AsyncDatabase
 
+from app import app_settings
+
 from .repository import ReminderRepository
 from .services import ReminderService
 from .settings import ReminderSettings
@@ -28,4 +30,5 @@ class ReminderProvider(Provider):
             client=client,
             model=self.settings.groq_model,
             repository=repository,
+            timezone=app_settings.tz,
         )
